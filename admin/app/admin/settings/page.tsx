@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Globe, Bell, Lock, Store, ChevronRight } from 'lucide-react';
+import { Globe, Bell, Lock, Store } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
@@ -12,7 +12,6 @@ export default function SettingsPage() {
 
   const [supabaseUrl, setSupabaseUrl] = useState('');
   const [supabaseAnonKey, setSupabaseAnonKey] = useState('');
-  const [showSupaConfig, setShowSupaConfig] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -95,95 +94,23 @@ export default function SettingsPage() {
           </div>
           <div className="space-y-3">
             {[
-              { label: 'Razorpay', status: 'Connected', color: '#4ADE80', expandable: false },
-              { label: 'Shiprocket', status: 'Connected', color: '#4ADE80', expandable: false },
+              { label: 'Razorpay', status: 'Connected', color: '#4ADE80' },
+              { label: 'Shiprocket', status: 'Connected', color: '#4ADE80' },
               { 
                 label: 'Supabase', 
                 status: isSupabaseConfigured ? 'Connected' : 'Not configured', 
-                color: isSupabaseConfigured ? '#4ADE80' : '#EAB308',
-                expandable: true
+                color: isSupabaseConfigured ? '#4ADE80' : '#EAB308'
               }
             ].map(item => (
-              <div key={item.label} className="flex flex-col">
-                <div 
-                  onClick={() => item.expandable && setShowSupaConfig(!showSupaConfig)}
-                  className={`flex items-center justify-between p-3.5 rounded-xl transition-all ${item.expandable ? 'cursor-pointer hover:bg-[rgba(255,255,255,0.05)]' : ''}`} 
-                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium" style={{ color: '#FAFAFA' }}>{item.label}</span>
-                    {item.expandable && (
-                      <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded cursor-pointer" style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37' }}>
-                        {showSupaConfig ? 'Hide Config' : 'Check Credentials'}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full" style={{ background: item.color }} />
-                    <span className="text-xs" style={{ color: item.color }}>{item.status}</span>
-                  </div>
+              <div key={item.label}
+                className="flex items-center justify-between p-3.5 rounded-xl"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <span className="text-sm font-medium" style={{ color: '#FAFAFA' }}>{item.label}</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: item.color }} />
+                  <span className="text-xs" style={{ color: item.color }}>{item.status}</span>
                 </div>
-
-                {item.label === 'Supabase' && showSupaConfig && (
-                  <div className="mt-2.5 p-4 rounded-xl space-y-4 transition-all" style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div className="text-[10px] font-bold tracking-wider" style={{ color: '#D4AF37' }}>SUPABASE OVERRIDES SETUP</div>
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: '#71717A' }}>Supabase Project URL</label>
-                      <input 
-                        type="text" 
-                        className="dark-input w-full px-3 py-2 text-xs" 
-                        placeholder="https://your-project.supabase.co"
-                        value={supabaseUrl} 
-                        onChange={e => setSupabaseUrl(e.target.value)} 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: '#71717A' }}>Supabase Anon / API Key</label>
-                      <input 
-                        type="password" 
-                        className="dark-input w-full px-3 py-2 text-xs" 
-                        placeholder="your-anon-key..."
-                        value={supabaseAnonKey} 
-                        onChange={e => setSupabaseAnonKey(e.target.value)} 
-                      />
-                      <p className="text-[10px] mt-1.5 leading-relaxed" style={{ color: '#52525B' }}>
-                        Overriding Supabase settings dynamically connects this admin dashboard and the storefront to your database without touching local config files.
-                      </p>
-                    </div>
-                    <div className="flex justify-end gap-2 pt-1">
-                      <button 
-                        onClick={async () => {
-                          if (typeof window !== 'undefined') {
-                            try {
-                              const res = await fetch('/api/admin/save-config', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ url: supabaseUrl, key: supabaseAnonKey })
-                              });
-                              const data = await res.json();
-                              if (data.success) {
-                                window.localStorage.setItem('NEXT_PUBLIC_SUPABASE_URL', supabaseUrl);
-                                window.localStorage.setItem('NEXT_PUBLIC_SUPABASE_ANON_KEY', supabaseAnonKey);
-                                toast.success("Supabase configuration saved & persisted! Reloading...");
-                                window.dispatchEvent(new Event('storage'));
-                                setTimeout(() => {
-                                  window.location.reload();
-                                }, 1000);
-                              } else {
-                                toast.error(`Failed to save config on server: ${data.error}`);
-                              }
-                            } catch (e: any) {
-                              toast.error(`Error saving config: ${e.message}`);
-                            }
-                          }
-                        }} 
-                        className="gold-btn px-4 py-2 text-xs font-bold tracking-wide transition-all"
-                      >
-                        Save Configuration
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             ))}
           </div>

@@ -25,10 +25,7 @@ const getSupabaseConfig = () => {
   let url = '';
   let key = '';
 
-  if (typeof window !== 'undefined') {
-    url = window.localStorage.getItem('NEXT_PUBLIC_SUPABASE_URL') || '';
-    key = window.localStorage.getItem('NEXT_PUBLIC_SUPABASE_ANON_KEY') || '';
-  } else {
+  if (typeof window === 'undefined') {
     const localConfig = getLocalConfig();
     if (localConfig?.url && localConfig?.key) {
       url = localConfig.url;

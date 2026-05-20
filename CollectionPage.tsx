@@ -2311,27 +2311,6 @@ export default function CollectionPage({ onNavigateToProduct, scrollY, onViewCha
 
   useEffect(() => {
     const fetchInventory = async () => {
-      // Proactively fetch Supabase configuration from Next.js backend if not already in localStorage
-      if (Platform.OS === 'web') {
-        try {
-          const localUrl = localStorage.getItem('NEXT_PUBLIC_SUPABASE_URL');
-          const localKey = localStorage.getItem('NEXT_PUBLIC_SUPABASE_ANON_KEY');
-          if (!localUrl || !localKey) {
-            const res = await fetch('/api/supabase-config');
-            const json = await res.json();
-            if (json.success && json.url && json.key) {
-              localStorage.setItem('NEXT_PUBLIC_SUPABASE_URL', json.url);
-              localStorage.setItem('NEXT_PUBLIC_SUPABASE_ANON_KEY', json.key);
-              window.dispatchEvent(new Event('storage'));
-              // Let it register
-              await new Promise(resolve => setTimeout(resolve, 50));
-            }
-          }
-        } catch (err) {
-          console.warn('Failed to dynamically retrieve Supabase config:', err);
-        }
-      }
-
       let dbProducts: any[] = [];
       try {
         const { data, error } = await supabaseClient

@@ -1,13 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
 const getSupabaseConfig = () => {
-  if (typeof window !== 'undefined') {
-    const localUrl = window.localStorage.getItem('NEXT_PUBLIC_SUPABASE_URL');
-    const localKey = window.localStorage.getItem('NEXT_PUBLIC_SUPABASE_ANON_KEY');
-    if (localUrl && localKey) {
-      return { url: localUrl, key: localKey };
-    }
-  }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
   return { url, key };
