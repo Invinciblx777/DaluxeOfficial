@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabaseAdmin } from './supabase/admin-service';
+import { STATIC_PRODUCTS } from './static-products';
 
 // ─────────────────────────────────────────
 // TYPES
@@ -72,8 +73,6 @@ export interface Customer {
   joinedAt: string;
 }
 
-// Seed data removed for dynamic Supabase fetching
-
 // ─────────────────────────────────────────
 // STORE
 // ─────────────────────────────────────────
@@ -122,8 +121,10 @@ export const useAdminStore = create<AdminStore>()(
             .select('*')
             .order('created_at', { ascending: false });
             
+          let allProducts: Product[] = [];
+            
           if (!error && data) {
-            const mapped: Product[] = data.map(p => ({
+            allProducts = data.map(p => ({
               id: p.id,
               slug: p.slug || '',
               name: p.name,
@@ -147,68 +148,45 @@ export const useAdminStore = create<AdminStore>()(
               isBestSeller: p.is_best_seller,
               createdAt: p.created_at
             }));
-            set({ products: mapped });
-            set({ isLoading: false });
-            return;
           }
-        } catch (err) {
-          console.warn("Supabase fetch failed, keeping local Zustand products if any", err);
-        }
 
-        // Offline fallback/seed products if no products exist
-        const currentProducts = get().products;
-        if (!currentProducts || currentProducts.length === 0) {
-          const seedProducts: Product[] = [
-            {
-              id: 'facewash',
-              name: 'ULTRA SENSITIVE GOLD GLOW FACEWASH',
-              tagline: 'Sulfate-Free · Gentle Cleansing · Sensitive Skin Safe',
-              description: 'A luxurious daily cleanser designed to purify skin, wash away impurities, and restore hydration without any irritation.',
-              category: 'Facewash',
-              price: 199,
-              discount: 0,
-              discountType: 'percent',
-              stock: 25,
-              stockStatus: 'instock',
-              images: [{ id: 'facewash-seed', url: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=80', isMain: true }],
-              ingredients: ['Aloe Vera', 'Rose Hydrosol', 'Licorice Extract', 'Gold Dust'],
-              benefits: ['Gently cleanses skin', 'Restores natural glow', 'Soothes dry patches'],
-              skinConcern: 'acne',
-              howToUse: 'Pump a small amount onto palms and lather on damp skin, then rinse.',
-              suitableFor: 'Sensitive Skin',
-              texture: 'Slightly golden gel',
-              fragrance: 'Mild herbal rose',
-              isActive: true,
-              isBestSeller: true,
-              createdAt: new Date().toISOString()
-            },
-            {
-              id: 'nightcream',
-              name: 'ULTRA SENSITIVE REPAIR NIGHT CREAM',
-              tagline: 'Low Irritation · Acne Safe · Overnight Skin Repair',
-              description: 'A gentle night cream formulated with hydrosols, botanical extracts and vitamins to calm, hydrate and repair skin overnight.',
-              category: 'Moisturizer',
-              price: 399,
-              discount: 0,
-              discountType: 'percent',
-              stock: 12,
-              stockStatus: 'instock',
-              images: [{ id: 'nightcream-seed', url: 'https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?auto=format&fit=crop&w=800&q=80', isMain: true }],
-              ingredients: ['Rose Hydrosol', 'Aloe Vera', 'Squalane', 'Niacinamide'],
-              benefits: ['Calms and repairs skin', 'Overnight nourishment', 'Repairs skin barrier'],
-              skinConcern: 'acne',
-              howToUse: 'Apply a small amount on clean face at night and massage gently.',
-              suitableFor: 'Normal to Dry Sensitive Skin',
-              texture: 'Rich non-greasy cream',
-              fragrance: 'Mild rose',
-              isActive: true,
-              isBestSeller: true,
-              createdAt: new Date().toISOString()
+          // Merge static products that are missing from DB
+          for (const sp of STATIC_PRODUCTS) {
+            const exists = allProducts.find(p => p.slug === sp.id || p.name.toUpperCase() === sp.name?.toUpperCase());
+            if (!exists) {
+              allProducts.push({
+                id: sp.id, // This indicates it's a static product
+                slug: sp.id,
+                name: sp.name,
+                tagline: sp.tagline || '',
+                description: sp.description || '',
+                category: sp.category === 'cleanse' ? 'Facewash' : sp.category === 'serum' ? 'Face Serum' : sp.category === 'hair' ? 'Hair Serum' : sp.category === 'combo' ? 'Combo' : sp.category,
+                price: sp.price,
+                discount: 0,
+                discountType: 'percent',
+                stock: 50,
+                stockStatus: 'instock',
+                images: [], 
+                ingredients: (sp as any).allIngredients || [],
+                benefits: sp.benefits || [],
+                skinConcern: sp.concerns?.[0] || '',
+                howToUse: sp.howToUse || '',
+                suitableFor: sp.suitableFor?.join(', ') || '',
+                texture: sp.texture || '',
+                fragrance: sp.fragrance || '',
+                isActive: true,
+                isBestSeller: true,
+                createdAt: new Date().toISOString()
+              });
             }
-          ];
-          set({ products: seedProducts });
+          }
+          
+          set({ products: allProducts });
+          set({ isLoading: false });
+        } catch (err) {
+          console.warn("Supabase fetch failed", err);
+          set({ isLoading: false });
         }
-        set({ isLoading: false });
       },
 
       fetchOrders: async () => {
@@ -330,6 +308,58 @@ export const useAdminStore = create<AdminStore>()(
       },
 
       updateProduct: async (id, updates) => {
+        // If the ID is a static ID (like 'facewash' or 'skin-combo'), we must INSERT it into Supabase instead of updating!
+        const isStaticId = id.length < 36 && !id.includes('-'); 
+        // Note: UUIDs have dashes and are 36 chars long. Our static ids are like 'facewash', 'hairserum', 'skin-combo'. 
+        // Wait, 'skin-combo' has a dash! Let's just check length < 36.
+        const isActuallyStatic = id.length < 36;
+
+        if (isActuallyStatic) {
+          // Find the product in the local state to get all its fields
+          const currentProduct = get().products.find(p => p.id === id);
+          if (!currentProduct) return false;
+          
+          const p = { ...currentProduct, ...updates };
+          const slug = p.slug || generateSlug(p.name);
+
+          try {
+            const { error } = await supabaseAdmin
+              .from('products')
+              .insert([{
+                name: p.name,
+                slug: slug,
+                tagline: p.tagline,
+                description: p.description,
+                category: p.category,
+                price: p.price,
+                discount: p.discount,
+                discount_type: p.discountType,
+                stock_quantity: p.stock,
+                is_active: p.isActive,
+                is_best_seller: p.isBestSeller,
+                ingredients: p.ingredients,
+                benefits: p.benefits,
+                skin_concern: p.skinConcern,
+                how_to_use: p.howToUse,
+                suitable_for: p.suitableFor,
+                texture: p.texture,
+                fragrance: p.fragrance,
+                images: p.images
+              }]);
+              
+            if (!error) {
+              await get().fetchProducts();
+              return true;
+            } else {
+              console.error("Failed to insert static product:", error);
+            }
+          } catch(err) {
+            console.error("Failed to insert static product:", err);
+          }
+          return false;
+        }
+
+        // Normal update for existing Supabase UUID products
         const dbUpdates: any = {};
         if (updates.name !== undefined) {
           dbUpdates.name = updates.name;
@@ -385,6 +415,14 @@ export const useAdminStore = create<AdminStore>()(
       },
 
       deleteProduct: async (id) => {
+        // If it's a static product, just remove from view temporarily or ignore
+        if (id.length < 36) {
+          set((state) => ({
+            products: state.products.filter((p) => p.id !== id)
+          }));
+          return true;
+        }
+
         try {
           const { error } = await supabaseAdmin
             .from('products')
@@ -399,7 +437,6 @@ export const useAdminStore = create<AdminStore>()(
           console.warn("Supabase delete failed, using offline fallback", err);
         }
 
-        // Fallback: Delete local state directly
         set((state) => ({
           products: state.products.filter((p) => p.id !== id)
         }));
