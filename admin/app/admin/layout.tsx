@@ -32,8 +32,8 @@ const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '').split(',').map
 function getStoredSession(): { access_token: string; user: { email: string } } | null {
   if (typeof window === 'undefined') return null;
 
-  // The project ref is extracted from the Supabase URL
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  // Read from localStorage overrides first, then from process.env
+  const supabaseUrl = window.localStorage.getItem('NEXT_PUBLIC_SUPABASE_URL') || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const match = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/);
   const projectRef = match ? match[1] : '';
 
@@ -59,9 +59,12 @@ function getStoredSession(): { access_token: string; user: { email: string } } |
 let _supabase: ReturnType<typeof createClient> | null = null;
 function getSupabase() {
   if (!_supabase) {
+    const supabaseUrl = (typeof window !== 'undefined' ? window.localStorage.getItem('NEXT_PUBLIC_SUPABASE_URL') : null) || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseAnonKey = (typeof window !== 'undefined' ? window.localStorage.getItem('NEXT_PUBLIC_SUPABASE_ANON_KEY') : null) || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
     _supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl || 'https://placeholder-project.supabase.co',
+      supabaseAnonKey || 'placeholder-anon-key',
       {
         auth: {
           flowType: 'implicit',

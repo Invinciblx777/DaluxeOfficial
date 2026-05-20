@@ -1340,55 +1340,107 @@ const dc = StyleSheet.create({
 // PRODUCT IMAGE CAROUSEL
 // ════════════════════════════════════════════════
 const ProductImageCarousel = ({ product, isMob }: { product: ProductType; isMob: boolean }) => {
+  const { width: winW } = useWindowDimensions();
   const [activeIndex, setActiveIndex] = useState(0);
-  const [containerWidth, setContainerWidth] = useState(0);
-  const gallery = product.gallery || [product.image];
+  const [containerWidth, setContainerWidth] = useState(isMob ? winW : 480);
+  const gallery = (product.gallery && product.gallery.length > 0) ? product.gallery : [product.image];
   const scrollRef = useRef<ScrollView>(null);
 
+  const activeWidth = (containerWidth && containerWidth > 200) ? containerWidth : (isMob ? winW : 480);
+
   const onScroll = (event: any) => {
-    if (containerWidth === 0) return;
+    const w = activeWidth;
+    if (w === 0) return;
     const x = event.nativeEvent.contentOffset.x;
-    const index = Math.round(x / containerWidth);
+    const index = Math.round(x / w);
     if (index !== activeIndex) {
       setActiveIndex(index);
     }
   };
 
   const scrollToImage = (index: number) => {
-    if (containerWidth === 0) return;
-    scrollRef.current?.scrollTo({ x: index * containerWidth, animated: true });
+    const w = activeWidth;
+    if (w === 0) return;
+    scrollRef.current?.scrollTo({ x: index * w, animated: true });
     setActiveIndex(index);
   };
 
   return (
     <View 
       style={[d.heroImageCol, isMob && { minWidth: '100%', maxWidth: '100%' }]}
-      onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
+      onLayout={(e) => {
+        const w = e.nativeEvent.layout.width;
+        if (w > 0) {
+          setContainerWidth(w);
+        }
+      }}
     >
-      <Animated.View 
-        entering={FadeInLeft.duration(600).delay(100)} 
-        style={[d.heroImageBg, { backgroundColor: 'transparent', overflow: 'hidden', padding: 0 }]}
-      >
-        <ScrollView
-          ref={scrollRef}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onScroll={onScroll}
-          scrollEventThrottle={16}
-          style={{ width: '100%', aspectRatio: 1 }}
+      {Platform.OS === 'web' ? (
+        <View 
+          style={[d.heroImageBg, { width: activeWidth, height: activeWidth / 0.85, backgroundColor: 'transparent', overflow: 'hidden', padding: 0 }]}
         >
-          {containerWidth > 0 && gallery.map((img, i) => (
-            <View key={i} style={{ width: containerWidth, aspectRatio: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <Image 
-                source={img} 
-                style={[d.heroImage, { width: '100%', height: '100%' }]} 
-                resizeMode="contain" 
-              />
-            </View>
-          ))}
-        </ScrollView>
-      </Animated.View>
+          {gallery.length === 1 ? (
+            <Image 
+              source={typeof gallery[0] === 'string' ? { uri: gallery[0] } : gallery[0]} 
+              style={[d.heroImage, { width: '100%', height: '100%' }]} 
+              resizeMode="contain" 
+            />
+          ) : (
+            <ScrollView
+              ref={scrollRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={onScroll}
+              scrollEventThrottle={16}
+              style={{ width: '100%', height: '100%' }}
+            >
+              {gallery.map((img, i) => (
+                <View key={i} style={{ width: activeWidth, height: activeWidth / 0.85, justifyContent: 'center', alignItems: 'center' }}>
+                  <Image 
+                    source={typeof img === 'string' ? { uri: img } : img} 
+                    style={[d.heroImage, { width: '100%', height: '100%' }]} 
+                    resizeMode="contain" 
+                  />
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+      ) : (
+        <Animated.View 
+          entering={FadeInLeft.duration(600).delay(100)} 
+          style={[d.heroImageBg, { backgroundColor: 'transparent', overflow: 'hidden', padding: 0 }]}
+        >
+          {gallery.length === 1 ? (
+            <Image 
+              source={gallery[0]} 
+              style={[d.heroImage, { width: '100%', height: '100%' }]} 
+              resizeMode="contain" 
+            />
+          ) : (
+            <ScrollView
+              ref={scrollRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={onScroll}
+              scrollEventThrottle={16}
+              style={{ width: '100%', aspectRatio: 1 }}
+            >
+              {gallery.map((img, i) => (
+                <View key={i} style={{ width: activeWidth, aspectRatio: 1, justifyContent: 'center', alignItems: 'center' }}>
+                  <Image 
+                    source={img} 
+                    style={[d.heroImage, { width: '100%', height: '100%' }]} 
+                    resizeMode="contain" 
+                  />
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </Animated.View>
+      )}
 
       {/* Thumbnails */}
       {gallery.length > 1 && (
@@ -1442,8 +1494,8 @@ const normalizeDynamicProduct = (dynamicP: any, staticP?: any) => {
   }
 
   // Normalize images and gallery
-  let image = staticP?.image;
-  let gallery = staticP?.gallery || [];
+  let image = staticP?.image || require('./assets/logo.png');
+  let gallery = (staticP?.gallery && staticP.gallery.length > 0) ? [...staticP.gallery] : [];
   
   const rawImages = dynamicP.images || [];
   if (rawImages.length > 0) {
@@ -1463,6 +1515,11 @@ const normalizeDynamicProduct = (dynamicP: any, staticP?: any) => {
       image = mappedImages[0];
       gallery = mappedImages;
     }
+  }
+
+  // Final fallback to make sure gallery is never an empty array if image exists
+  if ((!gallery || gallery.length === 0) && image) {
+    gallery = [image];
   }
 
   // Fallbacks for highlights
@@ -1513,6 +1570,7 @@ const normalizeDynamicProduct = (dynamicP: any, staticP?: any) => {
 
   return {
     id: staticP ? staticP.id : dynamicP.id,
+    slug: dynamicP.slug || staticP?.slug || (staticP ? staticP.id : ''),
     name,
     shortName,
     displayName,
@@ -1547,16 +1605,9 @@ const normalizeDynamicProduct = (dynamicP: any, staticP?: any) => {
   };
 };
 
-const copyToClipboard = async (text: string): Promise<boolean> => {
+const copyToClipboard = (text: string): boolean => {
   if (Platform.OS === 'web') {
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-    } catch (e) {
-      console.warn("navigator.clipboard failed, attempting fallback", e);
-    }
+    // 1. Try executive command copy synchronously first to ensure we don't lose user activation context
     try {
       const el = document.createElement('textarea');
       el.value = text;
@@ -1567,9 +1618,27 @@ const copyToClipboard = async (text: string): Promise<boolean> => {
       el.select();
       const success = document.execCommand('copy');
       document.body.removeChild(el);
-      return success;
+      if (success) return true;
     } catch (err) {
-      console.error("Fallback clipboard copy failed:", err);
+      console.warn("execCommand fallback failed, trying other methods:", err);
+    }
+
+    // 2. Try modern API if secure context is available
+    if (typeof window !== 'undefined' && window.isSecureContext && navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        navigator.clipboard.writeText(text);
+        return true;
+      } catch (e) {
+        console.warn("navigator.clipboard failed:", e);
+      }
+    }
+    
+    // 3. Final secure/insecure origin manual copy fallback
+    try {
+      window.prompt("Copy link to share product:", text);
+      return true;
+    } catch (promptErr) {
+      console.error("Prompt fallback failed:", promptErr);
       return false;
     }
   } else {
@@ -1594,10 +1663,24 @@ const ShareButton = ({ product, onCopied }: { product: ProductType; onCopied: ()
     );
 
     const shareUrl = Platform.OS === 'web' 
-      ? `${window.location.origin}/collections/${product.id}`
-      : `http://localhost:8081/collections/${product.id}`;
+      ? `${window.location.origin}/collections/${product.slug || product.id}`
+      : `http://localhost:8081/collections/${product.slug || product.id}`;
 
-    const success = await copyToClipboard(shareUrl);
+    // Try modern Native Web Share API first (incredibly premium mobile experience)
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: product.displayName,
+          text: product.tagline,
+          url: shareUrl,
+        });
+        return; // Success!
+      } catch (err) {
+        console.warn("navigator.share failed or was cancelled, falling back to clipboard copy", err);
+      }
+    }
+
+    const success = copyToClipboard(shareUrl);
     if (success) {
       onCopied();
     }
@@ -2228,6 +2311,27 @@ export default function CollectionPage({ onNavigateToProduct, scrollY, onViewCha
 
   useEffect(() => {
     const fetchInventory = async () => {
+      // Proactively fetch Supabase configuration from Next.js backend if not already in localStorage
+      if (Platform.OS === 'web') {
+        try {
+          const localUrl = localStorage.getItem('NEXT_PUBLIC_SUPABASE_URL');
+          const localKey = localStorage.getItem('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+          if (!localUrl || !localKey) {
+            const res = await fetch('/api/supabase-config');
+            const json = await res.json();
+            if (json.success && json.url && json.key) {
+              localStorage.setItem('NEXT_PUBLIC_SUPABASE_URL', json.url);
+              localStorage.setItem('NEXT_PUBLIC_SUPABASE_ANON_KEY', json.key);
+              window.dispatchEvent(new Event('storage'));
+              // Let it register
+              await new Promise(resolve => setTimeout(resolve, 50));
+            }
+          }
+        } catch (err) {
+          console.warn('Failed to dynamically retrieve Supabase config:', err);
+        }
+      }
+
       let dbProducts: any[] = [];
       try {
         const { data, error } = await supabaseClient
@@ -2356,7 +2460,7 @@ export default function CollectionPage({ onNavigateToProduct, scrollY, onViewCha
     setView('detail');
     onViewChange?.('detail');
     // Update URL to /collections/:slug
-    onProductSlugChange?.(product.id);
+    onProductSlugChange?.(product.slug || product.id);
     setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), 50);
   }, [onViewChange, onProductSlugChange]);
 
@@ -2372,7 +2476,7 @@ export default function CollectionPage({ onNavigateToProduct, scrollY, onViewCha
   // Auto-open product if initialProductId provided (from homepage card click)
   useEffect(() => {
     if (initialProductId && liveProducts.length > 0) {
-      const product = liveProducts.find(p => p.id === initialProductId);
+      const product = liveProducts.find(p => p.id === initialProductId || p.slug === initialProductId);
       if (product) {
         setTimeout(() => openProduct(product as ProductType), 150);
       }
@@ -2776,7 +2880,7 @@ const d = StyleSheet.create({
   },
   heroImageCol: { flex: 1, minWidth: 300, maxWidth: 480 },
   heroImageBg: {
-    width: '100%', aspectRatio: 0.85, justifyContent: 'center', alignItems: 'center',
+    width: '100%', aspectRatio: 0.85, minHeight: 380, justifyContent: 'center', alignItems: 'center',
     overflow: 'hidden', borderRadius: 8,
   },
   heroImage: { width: '100%', height: '100%' },

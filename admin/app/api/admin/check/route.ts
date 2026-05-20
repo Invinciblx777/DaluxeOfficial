@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase/admin-service';
 
 function getAdminEmails(): string[] {
   const raw = process.env.ADMIN_EMAILS || '';
@@ -14,12 +14,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ isAdmin: false }, { status: 401 });
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
-
-    const { data: { user }, error } = await supabase.auth.getUser(access_token);
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(access_token);
 
     if (error || !user) {
       return NextResponse.json({ isAdmin: false }, { status: 401 });
@@ -28,8 +23,24 @@ export async function POST(request: NextRequest) {
     const adminEmails = getAdminEmails();
     const isAdmin = adminEmails.includes((user.email || '').toLowerCase());
 
+    if (isAdmin) {
+      // Auto-promote this user to admin in public.profiles table so client-side RLS allows updates
+      try {
+        await supabaseAdmin.from('profiles').upsert({
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Admin',
+          role: 'admin'
+        });
+      } catch (upsertErr) {
+        console.warn('Failed to auto-promote admin profile:', upsertErr);
+      }
+    }
+
     return NextResponse.json({ isAdmin, email: user.email });
-  } catch {
+  } catch (err: any) {
+    console.error('Admin check error:', err);
     return NextResponse.json({ isAdmin: false }, { status: 500 });
   }
 }
+

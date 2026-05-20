@@ -13,6 +13,7 @@ export interface ProductImage { id: string; url: string; isMain: boolean; }
 
 export interface Product {
   id: string;
+  slug?: string;
   name: string;
   tagline: string;
   description: string;
@@ -97,6 +98,14 @@ interface AdminStore {
   updateOrderStatus: (id: string, status: OrderStatus) => Promise<boolean>;
 }
 
+const generateSlug = (name: string): string => {
+  let s = name.toLowerCase().trim();
+  if (s.includes('combo')) {
+    return s.replace(/[^a-z0-9\s\-]+/g, '').replace(/\s+/g, '-');
+  }
+  return s.replace(/[^a-z0-9]+/g, '');
+};
+
 export const useAdminStore = create<AdminStore>()(
   persist(
     (set, get) => ({
@@ -116,6 +125,7 @@ export const useAdminStore = create<AdminStore>()(
           if (!error && data) {
             const mapped: Product[] = data.map(p => ({
               id: p.id,
+              slug: p.slug || '',
               name: p.name,
               tagline: p.tagline,
               description: p.description,
@@ -268,9 +278,11 @@ export const useAdminStore = create<AdminStore>()(
       },
 
       addProduct: async (p) => {
+        const slug = generateSlug(p.name);
         const newProduct: Product = {
           ...p,
           id: 'local-' + Date.now(),
+          slug,
           stockStatus: getStockStatus(p.stock),
           createdAt: new Date().toISOString()
         };
@@ -280,6 +292,7 @@ export const useAdminStore = create<AdminStore>()(
             .from('products')
             .insert([{
               name: p.name,
+              slug,
               tagline: p.tagline,
               description: p.description,
               category: p.category,
@@ -318,7 +331,10 @@ export const useAdminStore = create<AdminStore>()(
 
       updateProduct: async (id, updates) => {
         const dbUpdates: any = {};
-        if (updates.name !== undefined) dbUpdates.name = updates.name;
+        if (updates.name !== undefined) {
+          dbUpdates.name = updates.name;
+          dbUpdates.slug = generateSlug(updates.name);
+        }
         if (updates.tagline !== undefined) dbUpdates.tagline = updates.tagline;
         if (updates.description !== undefined) dbUpdates.description = updates.description;
         if (updates.category !== undefined) dbUpdates.category = updates.category;

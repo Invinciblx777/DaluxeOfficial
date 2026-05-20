@@ -692,114 +692,139 @@ export default function App() {
   const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
 
   React.useEffect(() => {
-    // Detect if the URL contains an OAuth callback (PKCE or implicit).
-    // PKCE: ?code=... (Supabase v2 default)
-    // Implicit: #access_token=...
-    let isOAuthCallback = false;
-    if (Platform.OS === 'web') {
-      const params = new URLSearchParams(window.location.search);
-      const hash = window.location.hash;
-      isOAuthCallback = params.has('code') || hash.includes('access_token') || hash.includes('type=recovery');
-      if (isOAuthCallback) {
-        console.log('[Auth] OAuth callback detected in URL, Supabase will process automatically...');
-      }
-    }
+    let isMounted = true;
+    let subscription: any = null;
 
-    // 1. Initial check: force Supabase to process URL and storage immediately
-    // Supabase SDK recommends calling this to trigger parsing of hash/query parameters.
-    supabaseClient.auth.getSession().then(({ data, error }) => {
-      console.log('[Auth] Initial getSession:', data.session?.user?.email || 'no session', error?.message || '');
-    });
-
-    // 2. The onAuthStateChange listener is the MOST RELIABLE way to detect auth.
-    // Supabase's internal _initialize() processes the URL callback and fires
-    // INITIAL_SESSION (with session if callback succeeds) or SIGNED_IN events.
-    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event, session) => {
-      console.log('[Auth] State change:', event, session?.user?.email || 'no session');
-
-      if (event === 'INITIAL_SESSION') {
-        // This fires once on startup after Supabase processes the URL/storage.
-        // If we have a session (from OAuth callback or saved session), use it.
-        setUserEmail(session?.user?.email || null);
-        setAuthLoading(false);
-
-        if (session?.user && Platform.OS === 'web') {
-          const path = window.location.pathname;
-          
-          // Detect if we just returned from Google OAuth
-          const isAuthRedirect = window.location.search.includes('code=') || window.location.hash.includes('access_token');
-          
-          // Clean the URL: remove ?code= and #access_token params
-          if (isAuthRedirect || window.location.hash) {
-            window.history.replaceState({}, '', path);
+    const initAuth = async () => {
+      // Proactively fetch Supabase configuration from Next.js backend if not already in localStorage
+      if (Platform.OS === 'web') {
+        try {
+          const localUrl = localStorage.getItem('NEXT_PUBLIC_SUPABASE_URL');
+          const localKey = localStorage.getItem('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+          if (!localUrl || !localKey) {
+            const res = await fetch('/api/supabase-config');
+            const json = await res.json();
+            if (json.success && json.url && json.key) {
+              localStorage.setItem('NEXT_PUBLIC_SUPABASE_URL', json.url);
+              localStorage.setItem('NEXT_PUBLIC_SUPABASE_ANON_KEY', json.key);
+              window.dispatchEvent(new Event('storage'));
+              // Let it register
+              await new Promise(resolve => setTimeout(resolve, 50));
+            }
           }
-          
-          // Redirect to pending page if exists, otherwise profile/login
-          if (isAuthRedirect || path === '/login') {
+        } catch (err) {
+          console.warn('Failed to dynamically retrieve Supabase config:', err);
+        }
+      }
+
+      if (!isMounted) return;
+
+      // Detect if the URL contains an OAuth callback (PKCE or implicit).
+      // PKCE: ?code=... (Supabase v2 default)
+      // Implicit: #access_token=...
+      let isOAuthCallback = false;
+      if (Platform.OS === 'web') {
+        const params = new URLSearchParams(window.location.search);
+        const hash = window.location.hash;
+        isOAuthCallback = params.has('code') || hash.includes('access_token') || hash.includes('type=recovery');
+        if (isOAuthCallback) {
+          console.log('[Auth] OAuth callback detected in URL, Supabase will process automatically...');
+        }
+      }
+
+      // 1. Initial check: force Supabase to process URL and storage immediately
+      // Supabase SDK recommends calling this to trigger parsing of hash/query parameters.
+      try {
+        await supabaseClient.auth.getSession();
+      } catch (e) {
+        console.warn('[Auth] error getting session:', e);
+      }
+
+      if (!isMounted) return;
+
+      // 2. The onAuthStateChange listener is the MOST RELIABLE way to detect auth.
+      const res = supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (!isMounted) return;
+        console.log('[Auth] State change:', event, session?.user?.email || 'no session');
+
+        if (event === 'INITIAL_SESSION') {
+          setUserEmail(session?.user?.email || null);
+          setAuthLoading(false);
+
+          if (session?.user && Platform.OS === 'web') {
+            const path = window.location.pathname;
+            const isAuthRedirect = window.location.search.includes('code=') || window.location.hash.includes('access_token');
+            if (isAuthRedirect || window.location.hash) {
+              window.history.replaceState({}, '', path);
+            }
+            if (isAuthRedirect || path === '/login') {
+              if (pendingRedirect) {
+                const target = pendingRedirect as any;
+                setPendingRedirect(null);
+                setCurrentPage(target);
+                window.history.replaceState({}, '', `/${target}`);
+              } else {
+                window.history.replaceState({}, '', '/profile');
+                setCurrentPage('profile');
+              }
+            } else if (path === '/profile') {
+              setCurrentPage('profile');
+            }
+          } else if (!session && Platform.OS === 'web') {
+            const path = window.location.pathname;
+            if (path === '/profile') {
+              window.history.replaceState({}, '', '/login');
+              setCurrentPage('login');
+            }
+          }
+        }
+
+        if (event === 'SIGNED_IN' && session?.user) {
+          console.log('[Auth] User signed in:', session.user.email);
+          setUserEmail(session.user.email || null);
+          setAuthLoading(false);
+
+          if (Platform.OS === 'web') {
+            const path = window.location.pathname;
+            if (window.location.search.includes('code=') || window.location.hash) {
+              window.history.replaceState({}, '', path);
+            }
             if (pendingRedirect) {
               const target = pendingRedirect as any;
               setPendingRedirect(null);
               setCurrentPage(target);
               window.history.replaceState({}, '', `/${target}`);
-            } else {
+            } else if (path === '/login' || path === '/') {
               window.history.replaceState({}, '', '/profile');
               setCurrentPage('profile');
             }
-          } else if (path === '/profile') {
-            setCurrentPage('profile');
           }
-        } else if (!session && Platform.OS === 'web') {
-          // No session — if on /profile, redirect to login
-          const path = window.location.pathname;
-          if (path === '/profile') {
+        }
+
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('[Auth] Token refreshed for:', session?.user?.email);
+          if (session?.user) setUserEmail(session.user.email || null);
+        }
+
+        if (event === 'SIGNED_OUT') {
+          console.log('[Auth] User signed out');
+          setUserEmail(null);
+          if (Platform.OS === 'web') {
             window.history.replaceState({}, '', '/login');
-            setCurrentPage('login');
           }
+          setCurrentPage('login');
         }
-      }
+      });
 
-      if (event === 'SIGNED_IN' && session?.user) {
-        console.log('[Auth] User signed in:', session.user.email);
-        setUserEmail(session.user.email || null);
-        setAuthLoading(false);
+      subscription = res.data.subscription;
+    };
 
-        if (Platform.OS === 'web') {
-          const path = window.location.pathname;
-          // Clean the URL
-          if (window.location.search.includes('code=') || window.location.hash) {
-            window.history.replaceState({}, '', path);
-          }
-          
-          // Handle pending redirect after manual login
-          if (pendingRedirect) {
-            const target = pendingRedirect as any;
-            setPendingRedirect(null);
-            setCurrentPage(target);
-            window.history.replaceState({}, '', `/${target}`);
-          } else if (path === '/login' || path === '/') {
-            // Always redirect from login to profile on sign-in if no pending redirect
-            window.history.replaceState({}, '', '/profile');
-            setCurrentPage('profile');
-          }
-        }
-      }
+    initAuth();
 
-      if (event === 'TOKEN_REFRESHED') {
-        console.log('[Auth] Token refreshed for:', session?.user?.email);
-        if (session?.user) setUserEmail(session.user.email || null);
-      }
-
-      if (event === 'SIGNED_OUT') {
-        console.log('[Auth] User signed out');
-        setUserEmail(null);
-        if (Platform.OS === 'web') {
-          window.history.replaceState({}, '', '/login');
-        }
-        setCurrentPage('login');
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      if (subscription) subscription.unsubscribe();
+    };
   }, []);
 
 
@@ -946,13 +971,10 @@ export default function App() {
         setCurrentPage('combo-detail');
         return;
       }
-      // Regular product slug — open collection with that product highlighted
-      const product = COLLECTION_PRODUCTS.find(p => p.id === slug);
-      if (product) {
-        setSelectedProductId(product.id);
-        setCurrentPage('collection');
-        return;
-      }
+      // Regular or custom product slug — open collection with that product highlighted
+      setSelectedProductId(slug);
+      setCurrentPage('collection');
+      return;
     }
     if (path === '/collection' || path === '/collections' || path === '/products') {
       const concern = params?.get('concern');

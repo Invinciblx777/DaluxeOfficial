@@ -3,11 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAdminStore, Product, getStockStatus } from '@/lib/store';
 import { supabaseAdmin } from '@/lib/supabase/admin-service';
-import { Plus, Pencil, Trash2, X, Upload, Search, ChevronDown, Star, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Upload, Search, ChevronDown, Star, ToggleLeft, ToggleRight, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 
-const CATEGORIES = ['Face Serum', 'Facewash', 'Moisturizer', 'Sunscreen', 'Eye Cream', 'Hair Serum', 'Toner', 'Body Oil', 'Lip Balm', 'Mask'];
+const CATEGORIES = ['Face Serum', 'Facewash', 'Moisturizer', 'Sunscreen', 'Eye Cream', 'Hair Serum', 'Toner', 'Body Oil', 'Lip Balm', 'Mask', 'Combo'];
 
 const STOCK_BADGE: Record<string, string> = {
   instock: 'badge-instock',
@@ -554,6 +554,53 @@ export default function ProductsPage() {
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-2 justify-end">
+                    <button 
+                    onClick={async () => {
+                        if (typeof window !== 'undefined') {
+                          const storefrontOrigin = window.location.origin.includes(':3002') 
+                            ? 'http://localhost:8081' 
+                            : window.location.origin;
+                          const shareUrl = `${storefrontOrigin}/collections/${p.slug || p.id}`;
+                          
+                          let copied = false;
+
+                          // 1. Try execCommand (synchronous, works on insecure origins)
+                          try {
+                            const el = document.createElement('textarea');
+                            el.value = shareUrl;
+                            el.setAttribute('readonly', '');
+                            el.style.position = 'absolute';
+                            el.style.left = '-9999px';
+                            document.body.appendChild(el);
+                            el.select();
+                            copied = document.execCommand('copy');
+                            document.body.removeChild(el);
+                          } catch (e) {}
+
+                          // 2. Try navigator.clipboard
+                          if (!copied) {
+                            try {
+                              if (navigator.clipboard && navigator.clipboard.writeText) {
+                                await navigator.clipboard.writeText(shareUrl);
+                                copied = true;
+                              }
+                            } catch (err) {}
+                          }
+
+                          if (copied) {
+                            toast.success("Product link copied to clipboard!");
+                          } else {
+                            // 3. Final fallback: prompt
+                            window.prompt("Copy product link:", shareUrl);
+                          }
+                        }
+                      }}
+                      className="ghost-btn p-2 rounded-lg" 
+                      style={{ color: '#D4AF37' }}
+                      title="Share Product Link"
+                    >
+                      <Share2 size={14} />
+                    </button>
                     <button onClick={() => { setEditing(p); setModal('edit'); }}
                       className="ghost-btn p-2 rounded-lg" title="Edit">
                       <Pencil size={14} />
