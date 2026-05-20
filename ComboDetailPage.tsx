@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, Image, TouchableOpacity,
-  StyleSheet, Dimensions, Platform, TextInput,
+  StyleSheet, Dimensions, Platform, TextInput, useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   ArrowLeft, Check, ChevronRight, ShoppingCart, Package, Star,
-  Truck, Shield, Gift, Leaf,
+  Truck, Shield, Gift, Leaf, Share2,
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { COMBOS_DATA, ProductType } from './CollectionPage';
@@ -60,6 +60,7 @@ export default function ComboDetailPage({
   const [pincode, setPincode] = useState('');
   const [delivery, setDelivery] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'details' | 'routine' | 'ingredients'>('details');
+  const [shareToast, setShareToast] = useState(false);
 
   const checkDelivery = () => {
     if (pincode.length === 6) {
@@ -80,6 +81,54 @@ export default function ComboDetailPage({
       subtitle: combo.subtitle,
       category: 'combo',
     });
+  };
+
+  const handleShare = async () => {
+    const shareUrl = Platform.OS === 'web' 
+      ? `${window.location.origin}/collections/${combo.slug || combo.id}`
+      : `https://daluxeofficial.in/collections/${combo.slug || combo.id}`;
+
+    // Try modern Web Share API first
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: combo.displayName || combo.name,
+          text: combo.subtitle || combo.tagline,
+          url: shareUrl,
+        });
+        return;
+      } catch (err) {}
+    }
+
+    // Fallback: copy to clipboard
+    if (Platform.OS === 'web') {
+      let copied = false;
+      try {
+        const el = document.createElement('textarea');
+        el.value = shareUrl;
+        el.setAttribute('readonly', '');
+        el.style.position = 'absolute';
+        el.style.left = '-9999px';
+        document.body.appendChild(el);
+        el.select();
+        copied = document.execCommand('copy');
+        document.body.removeChild(el);
+      } catch (e) {}
+      if (!copied) {
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(shareUrl);
+            copied = true;
+          }
+        } catch (err) {}
+      }
+      if (!copied) {
+        window.prompt('Copy combo link:', shareUrl);
+      } else {
+        setShareToast(true);
+        setTimeout(() => setShareToast(false), 2000);
+      }
+    }
   };
 
   return (
@@ -189,7 +238,17 @@ export default function ComboDetailPage({
 
           {/* ── Add to Cart CTA ── */}
           <Animated.View entering={FadeInUp.delay(200).duration(500)} style={{ marginBottom: 20, gap: 12 }}>
-            <GoldBtn label="Add Combo to Cart" onPress={handleAddToCart} icon={ShoppingCart} full />
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <GoldBtn label="Add Combo to Cart" onPress={handleAddToCart} icon={ShoppingCart} full />
+              </View>
+              <TouchableOpacity onPress={handleShare} activeOpacity={0.8}
+                style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: GOLD_GLOW,
+                  borderWidth: 1, borderColor: GOLD_BDR, justifyContent: 'center', alignItems: 'center',
+                  alignSelf: 'center' }}>
+                <Share2 color={GOLD} size={20} />
+              </TouchableOpacity>
+            </View>
 
             {/* Trust badges */}
             <View style={{ flexDirection: 'row', justifyContent: 'center', gap: isMob ? 20 : 36, paddingVertical: 12,
@@ -337,8 +396,25 @@ export default function ComboDetailPage({
           </Text>
           <Text style={{ color: GOLD, fontSize: 16, fontWeight: '700' }}>{combo.priceDisplay}</Text>
         </View>
-        <GoldBtn label="Add to Cart" onPress={handleAddToCart} icon={ShoppingCart} />
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <GoldBtn label="Add to Cart" onPress={handleAddToCart} icon={ShoppingCart} />
+          <TouchableOpacity onPress={handleShare} activeOpacity={0.8}
+            style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: GOLD_GLOW,
+              borderWidth: 1, borderColor: GOLD_BDR, justifyContent: 'center', alignItems: 'center', marginLeft: 10 }}>
+            <Share2 color={GOLD} size={18} />
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {shareToast && (
+        <View style={{ position: 'absolute', top: 80, alignSelf: 'center',
+          backgroundColor: 'rgba(26,18,8,0.92)', paddingHorizontal: 20, paddingVertical: 12,
+          borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 8,
+          ...WEB({ boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }) }}>
+          <Check color={GOLD} size={16} />
+          <Text style={{ color: '#FFF', fontSize: 13, fontWeight: '600' }}>Link copied to clipboard!</Text>
+        </View>
+      )}
     </View>
   );
 }

@@ -1466,7 +1466,7 @@ const ProductImageCarousel = ({ product, isMob }: { product: ProductType; isMob:
                 overflow: 'hidden'
               }}
             >
-              <Image source={img} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+              <Image source={typeof img === 'string' ? { uri: img } : img} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
             </TouchableOpacity>
           ))}
         </View>
@@ -1605,7 +1605,7 @@ const normalizeDynamicProduct = (dynamicP: any, staticP?: any) => {
   };
 };
 
-const copyToClipboard = (text: string): boolean => {
+export const copyToClipboard = (text: string): boolean => {
   if (Platform.OS === 'web') {
     // 1. Try executive command copy synchronously first to ensure we don't lose user activation context
     try {

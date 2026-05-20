@@ -61,7 +61,12 @@ function ProductModal({ product, onClose }: { product?: Product; onClose: () => 
           .from('product-images')
           .upload(filePath, file);
 
-        if (!error && data) {
+        if (error) {
+          toast.error(`Upload failed: ${error.message}. Please check Supabase Storage is configured with a 'product-images' bucket.`);
+          continue;
+        }
+
+        if (data) {
           const { data: { publicUrl } } = supabaseAdmin.storage
             .from('product-images')
             .getPublicUrl(filePath);
@@ -70,29 +75,11 @@ function ProductModal({ product, onClose }: { product?: Product; onClose: () => 
             ...f,
             images: [...f.images, { id: fileName, url: publicUrl, isMain: f.images.length === 0 }]
           }));
-          toast.success("Image uploaded successfully!");
-          continue;
+          toast.success("Image uploaded to Supabase!");
         }
-      } catch (err) {
-        console.warn("Storage upload failed, using Base64 local fallback", err);
+      } catch (err: any) {
+        toast.error(`Upload failed: ${err?.message || 'Supabase not configured'}. Go to Settings → Integrations to configure Supabase.`);
       }
-
-      // Base64 local fallback
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64Url = e.target?.result as string;
-        if (base64Url) {
-          setForm(f => ({
-            ...f,
-            images: [...f.images, { id: `local-${Date.now()}-${fileName}`, url: base64Url, isMain: f.images.length === 0 }]
-          }));
-          toast.success(`Image added locally (offline fallback)`);
-        }
-      };
-      reader.onerror = () => {
-        toast.error(`Could not read file locally`);
-      };
-      reader.readAsDataURL(file);
     }
     setIsUploading(false);
   }
