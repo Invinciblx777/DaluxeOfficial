@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#053e4b"/>
+      <stop offset="35%" stop-color="#087084"/>
+      <stop offset="70%" stop-color="#065464"/>
+      <stop offset="100%" stop-color="#021c22"/>
+    </linearGradient>
+    <filter id="f1" x="0" y="0">
+      <feGaussianBlur stdDeviation="50" />
+    </filter>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#g1)"/>
+  
+  <!-- Stylized Silk Waves -->
+  <path d="M -200 -200 Q 800 600 1920 -100 L 1920 1080 L -200 1080 Z" fill="#035d6f" opacity="0.3" filter="url(#f1)"/>
+  <path d="M -200 200 Q 1000 800 2100 200 L 2100 1200 L -200 1200 Z" fill="#012b34" opacity="0.5" filter="url(#f1)"/>
+</svg>

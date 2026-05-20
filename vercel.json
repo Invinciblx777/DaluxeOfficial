@@ -1,0 +1,6 @@
+{
+    "framework": "nextjs",
+    "installCommand": "npm install && cd admin && npm install",
+    "buildCommand": "npx expo export -p web && cp -r dist/* admin/public/ && cd admin && npx next build",
+    "outputDirectory": "admin/.next"
+}

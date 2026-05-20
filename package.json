@@ -1,0 +1,46 @@
+{
+  "name": "daluxe-app",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "cross-env BROWSER=none EXPO_NO_BROWSER=1 expo start --web --port 8082",
+    "build": "expo export -p web",
+    "admin": "cd admin && npx next dev --port 3002",
+    "proxy": "node dev-proxy.js",
+    "dev": "node kill-ports.js && concurrently --names \"PROXY,EXPO,ADMIN\" --prefix-colors \"cyan,yellow,magenta\" \"node dev-proxy.js\" \"npm run web\" \"npm run admin\""
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~55.0.6",
+    "@supabase/supabase-js": "^2.103.0",
+    "expo": "~55.0.4",
+    "expo-av": "^16.0.8",
+    "expo-font": "~55.0.4",
+    "expo-linear-gradient": "~55.0.8",
+    "expo-status-bar": "~55.0.4",
+    "framer-motion": "^12.35.2",
+    "lucide-react": "^0.577.0",
+    "lucide-react-native": "^0.575.0",
+    "motion": "^12.35.2",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-native": "0.83.2",
+    "react-native-reanimated": "4.2.1",
+    "react-native-web": "^0.21.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "@vercel/node": "^5.7.5",
+    "babel-preset-expo": "^55.0.10",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "express": "^5.2.1",
+    "http-proxy-middleware": "^3.0.5",
+    "next": "15.5.8",
+    "tailwindcss": "^3.4.19",
+    "typescript": "~5.9.2"
+  },
+  "private": true
+}
