@@ -57,33 +57,12 @@ function ProductModal({ product, onClose }: { product?: Product; onClose: () => 
       const filePath = `${fileName}`;
 
       try {
-        let { data, error } = await supabaseAdmin.storage
+        const { data, error } = await supabaseAdmin.storage
           .from('product-images')
           .upload(filePath, file);
 
-        // Auto-create bucket if it doesn't exist
-        if (error && error.message.includes('Bucket not found')) {
-          toast.info("Bucket not found. Attempting to create 'product-images' bucket...");
-          const { error: createError } = await supabaseAdmin.storage.createBucket('product-images', {
-            public: true,
-            allowedMimeTypes: ['image/*']
-          });
-          
-          if (!createError || createError.message.includes('already exists')) {
-            // Retry upload
-            const retryParams = await supabaseAdmin.storage
-              .from('product-images')
-              .upload(filePath, file);
-            data = retryParams.data;
-            error = retryParams.error;
-          } else {
-            toast.error(`Could not create bucket: ${createError.message}`);
-            continue;
-          }
-        }
-
         if (error) {
-          toast.error(`Upload failed: ${error.message}. Please check your Supabase Storage settings.`);
+          toast.error(`Upload failed: ${error.message}.`);
           continue;
         }
 
@@ -99,7 +78,7 @@ function ProductModal({ product, onClose }: { product?: Product; onClose: () => 
           toast.success("Image uploaded to Supabase!");
         }
       } catch (err: any) {
-        toast.error(`Upload failed: ${err?.message || 'Supabase not configured'}. Go to Settings → Integrations to configure Supabase.`);
+        toast.error(`Upload failed: ${err?.message || 'Supabase not configured'}.`);
       }
     }
     setIsUploading(false);
