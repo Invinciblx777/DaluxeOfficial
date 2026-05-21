@@ -480,9 +480,6 @@ export default function ProductsPage() {
           <h2 className="text-2xl font-light tracking-tight" style={{ color: '#FAFAFA' }}>Products</h2>
           <p className="text-sm mt-1" style={{ color: '#52525B' }}>{products.length} products in catalog</p>
         </div>
-        <button onClick={() => { setEditing(undefined); setModal('add'); }} className="gold-btn flex items-center gap-2 px-5 py-2.5 text-sm">
-          <Plus size={16} /> Add Product
-        </button>
       </div>
 
       {/* Search */}

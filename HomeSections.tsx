@@ -380,7 +380,7 @@ export default function HomeSections({ onAddToCart, onProductClick, onStartScan,
       <SkinAssessment onStartScan={onStartScan} />
       <LuxuryMarquee />
       <CampaignBanners onNavigate={onNavigate} />
-      <ProductCarouselSection title="Moisturizers & Creams" products={moisturizers} onAddToCart={onAddToCart} onProductClick={onProductClick} />
+
       <ReviewsSection />
       <Footer onNavigate={onNavigate} />
     </View>
