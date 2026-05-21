@@ -15,7 +15,7 @@ import Animated, {
   Easing,
   useAnimatedReaction
 } from 'react-native-reanimated';
-import { User, ShoppingCart, ChevronLeft, ChevronRight, Sparkles, Menu, X, Star, ArrowRight, Home, LayoutGrid, MessageCircle, ScanFace } from 'lucide-react-native';
+import { User, ShoppingCart, ChevronLeft, ChevronRight, Sparkles, Menu, X, Star, ArrowRight, Home, LayoutGrid, MessageCircle, ScanFace, Download } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import CollectionPage, { ProductType, CartItem, CartDrawer, COLLECTION_PRODUCTS } from './CollectionPage';
 import ComboDetailPage, { ComboId } from './ComboDetailPage';
@@ -829,6 +829,49 @@ export default function App() {
 
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallBtn, setShowInstallBtn] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('daluxe_pwa_dismissed') === 'true';
+    }
+    return false;
+  });
+
+  React.useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBtn(true);
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setShowInstallBtn(false);
+      console.log('[PWA] App successfully installed!');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`[PWA] User choice outcome: ${outcome}`);
+    
+    setDeferredPrompt(null);
+    setShowInstallBtn(false);
+  };
   const [collectionView, setCollectionView] = useState<'grid' | 'detail'>('grid');
   const [isScrolled, setIsScrolled] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -1211,6 +1254,11 @@ export default function App() {
         )}
         {/* Mobile + Desktop right icons */}
         <View style={isMobile ? mobileStyles.navIcons : styles.navIcons}>
+          {Platform.OS === 'web' && showInstallBtn && (
+            <TouchableOpacity style={[styles.iconBtn, { marginRight: 2 }]} onPress={handleInstallClick}>
+              <Download color="#C8A96A" size={20} />
+            </TouchableOpacity>
+          )}
           {!isMobile && (
             <TouchableOpacity 
               style={[styles.iconBtn, authLoading && { opacity: 0.6 }]} 
@@ -1736,6 +1784,110 @@ export default function App() {
       {/* WhatsApp Chat */}
       {!['checkout', 'login', 'skin-assessment'].includes(currentPage) && (
         <WhatsAppChat />
+      )}
+
+      {/* PWA Promo Install Banner */}
+      {Platform.OS === 'web' && showInstallBtn && !bannerDismissed && splashDone && (
+        <View style={{
+          position: 'absolute',
+          bottom: isMobile ? 100 : 30, // Elevated on mobile to clear the Liquid Glass bottom navbar
+          left: 20,
+          right: 20,
+          maxWidth: isMobile ? undefined : 460,
+          alignSelf: isMobile ? 'stretch' : 'flex-end',
+          zIndex: 9999,
+          borderRadius: 24,
+          padding: 1.5,
+          ...Platform.select({ web: {
+            filter: 'drop-shadow(0 12px 40px rgba(0,0,0,0.35))',
+            animation: 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+          } as any })
+        }}>
+          {/* Outer gold ring container */}
+          <View style={{
+            borderRadius: 24,
+            padding: 1,
+            ...Platform.select({ web: {
+              background: 'linear-gradient(135deg, rgba(200, 169, 106, 0.4) 0%, rgba(200, 169, 106, 0.08) 50%, rgba(200, 169, 106, 0.25) 100%)',
+            } as any })
+          }}>
+            {/* Glass pill body */}
+            <View style={{
+              borderRadius: 22,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.06)',
+              padding: 20,
+              overflow: 'hidden',
+              backgroundColor: 'rgba(18, 13, 7, 0.96)',
+              ...Platform.select({ web: {
+                backdropFilter: 'blur(30px) saturate(190%)',
+                WebkitBackdropFilter: 'blur(30px) saturate(190%)',
+              } as any })
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                  <View style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: 12,
+                    backgroundColor: 'rgba(200, 169, 106, 0.15)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: 'rgba(200, 169, 106, 0.3)'
+                  }}>
+                    <Download color="#C8A96A" size={20} />
+                  </View>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '700', fontFamily: 'Outfit, sans-serif', letterSpacing: 0.5 }}>Daluxe Luxury App</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: 'Outfit, sans-serif', marginTop: 1 }} numberOfLines={1}>Install for a premium luxury experience</Text>
+                  </View>
+                </View>
+                
+                {/* Close Button */}
+                <TouchableOpacity
+                  onPress={() => {
+                    setBannerDismissed(true);
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem('daluxe_pwa_dismissed', 'true');
+                    }
+                  }}
+                  activeOpacity={0.7}
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 15,
+                    backgroundColor: 'rgba(255,255,255,0.06)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <X color="rgba(255,255,255,0.6)" size={14} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Premium Gold CTA Button */}
+              <TouchableOpacity
+                onPress={handleInstallClick}
+                activeOpacity={0.85}
+                style={{
+                  borderRadius: 14,
+                  paddingVertical: 12,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  backgroundColor: '#C8A96A',
+                  borderWidth: 1,
+                  borderColor: '#E7C873',
+                  ...Platform.select({ web: {
+                    boxShadow: '0 4px 15px rgba(200, 169, 106, 0.3)',
+                  } as any })
+                }}
+              >
+                <Text style={{ color: '#120D07', fontSize: 12, fontWeight: '800', fontFamily: 'Outfit, sans-serif', letterSpacing: 1.2 }}>INSTALL NOW</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       )}
 
       {/* Splash Loader */}
