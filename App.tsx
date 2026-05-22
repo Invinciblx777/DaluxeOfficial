@@ -1088,6 +1088,119 @@ export default function App() {
     }
   }, [currentPage]);
 
+  // ===== DYNAMIC SEO: Update page title, meta description, canonical, and OG tags =====
+  React.useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
+    const seoMap: Record<string, { title: string; description: string; path: string }> = {
+      product: {
+        title: 'Daluxe — Premium Dermal-Grade Botanical Skincare & Haircare | Made in India',
+        description: 'Shop Daluxe luxury skincare & haircare products. Dermal-grade botanical formulas featuring Face Serum, Hair Serum, Night Cream & Gold Glow Facewash. ISO & GMP certified. Made in India.',
+        path: '/',
+      },
+      collection: {
+        title: 'Shop Daluxe Collection — Face Serum, Hair Serum, Night Cream & Facewash',
+        description: 'Browse the complete Daluxe luxury skincare & haircare collection. Dermal-grade botanical serums, night creams, facewash & exclusive combo sets. Free shipping across India.',
+        path: '/collections',
+      },
+      'our-story': {
+        title: 'Our Story — Daluxe | Luxury Botanical Skincare Made in India',
+        description: 'Discover the story behind Daluxe — a luxury botanical skincare & haircare brand born from a passion for dermal-grade, plant-powered formulas. ISO & GMP certified.',
+        path: '/our-story',
+      },
+      contact: {
+        title: 'Contact Daluxe — Customer Support & Enquiries',
+        description: 'Get in touch with Daluxe Official for product enquiries, order support, bulk orders, or collaborations. We are here to help you with your luxury skincare journey.',
+        path: '/contact',
+      },
+      'skin-assessment': {
+        title: 'Free AI Skin Assessment — Daluxe Luxury Skincare',
+        description: 'Take the free Daluxe AI skin assessment to discover your skin type, concerns, and get personalized product recommendations from our botanical skincare range.',
+        path: '/skin-assessment',
+      },
+      'combo-detail': {
+        title: 'Daluxe Exclusive Combo Sets — Save More on Luxury Skincare & Haircare',
+        description: 'Get the best value with Daluxe exclusive combo bundles. Premium skincare & haircare sets featuring our bestselling botanical formulas at special prices.',
+        path: '/collections',
+      },
+      login: {
+        title: 'Sign In — Daluxe Official Account',
+        description: 'Sign in to your Daluxe account to track orders, manage your profile, and enjoy a personalized luxury skincare shopping experience.',
+        path: '/login',
+      },
+      profile: {
+        title: 'My Account — Daluxe Official',
+        description: 'Manage your Daluxe account, view order history, and track shipments.',
+        path: '/profile',
+      },
+      checkout: {
+        title: 'Checkout — Daluxe Official',
+        description: 'Complete your Daluxe order. Secure checkout with multiple payment options.',
+        path: '/checkout',
+      },
+      terms: {
+        title: 'Terms & Conditions — Daluxe Official',
+        description: 'Read the terms and conditions for using daluxeofficial.in and purchasing Daluxe luxury skincare & haircare products.',
+        path: '/terms-and-conditions',
+      },
+      'privacy-policy': {
+        title: 'Privacy Policy — Daluxe Official',
+        description: 'Learn how Daluxe Official collects, uses, and protects your personal information when you shop for luxury skincare & haircare products.',
+        path: '/privacy-policy',
+      },
+      'refund-policy': {
+        title: 'Refund Policy — Daluxe Official',
+        description: 'Daluxe refund policy for skincare & haircare products. Learn about eligibility, timelines, and how to request a refund.',
+        path: '/refund-policy',
+      },
+      'return-policy': {
+        title: 'Return Policy — Daluxe Official',
+        description: 'Daluxe return policy for skincare & haircare products. Learn how to initiate a return and our return conditions.',
+        path: '/return-policy',
+      },
+      'shipping-policy': {
+        title: 'Shipping Policy — Daluxe Official',
+        description: 'Daluxe shipping information including delivery timelines, shipping charges, and areas we deliver to across India.',
+        path: '/shipping-policy',
+      },
+    };
+
+    const seo = seoMap[currentPage] || seoMap.product;
+
+    // Update document title
+    document.title = seo.title;
+
+    // Helper to set or create a meta tag
+    const setMeta = (attr: string, key: string, content: string) => {
+      let el = document.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', content);
+    };
+
+    // Update meta description
+    setMeta('name', 'description', seo.description);
+
+    // Update canonical URL
+    const canonicalUrl = `https://daluxeofficial.in${seo.path}`;
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (canonical) {
+      canonical.href = canonicalUrl;
+    }
+
+    // Update Open Graph tags
+    setMeta('property', 'og:title', seo.title);
+    setMeta('property', 'og:description', seo.description);
+    setMeta('property', 'og:url', canonicalUrl);
+
+    // Update Twitter Card tags
+    setMeta('name', 'twitter:title', seo.title);
+    setMeta('name', 'twitter:description', seo.description);
+  }, [currentPage]);
+
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
       if (isMobileStatic) {
@@ -2473,7 +2586,7 @@ const mobileStyles = StyleSheet.create({
     elevation: 8,
     width: '85%',
     alignItems: 'center',
-    transform: [{ translateY: 0 }],
+    transform: [{ translateY: 37 }],
   },
   buyBtnText: {
     color: '#000000',

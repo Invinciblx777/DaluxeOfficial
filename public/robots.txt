@@ -1,0 +1,15 @@
+# Daluxe Official — Robots.txt
+# https://daluxeofficial.in
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+Disallow: /_next/
+Disallow: /_expo/
+Disallow: /login
+Disallow: /profile
+Disallow: /checkout
+
+# Sitemap
+Sitemap: https://daluxeofficial.in/sitemap.xml
