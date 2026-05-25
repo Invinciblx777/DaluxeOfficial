@@ -901,6 +901,8 @@ export default function App() {
   const [selectedProductId, setSelectedProductId] = useState<string | undefined>(undefined);
   const [selectedConcern, setSelectedConcern] = useState<string | null>(null);
   const [checkoutTotal, setCheckoutTotal] = useState(0);
+  // Remember where the user was on the home page before navigating away (desktop)
+  const savedHomeScrollY = React.useRef<number>(0);
 
   // Catch PhonePe success redirect, clear cart, and navigate to Orders
   React.useEffect(() => {
@@ -1559,6 +1561,10 @@ export default function App() {
                       }
                     }}
                     onProductClick={(p: any) => {
+                      // Save current scroll position so we can restore it when user presses back
+                      if (mainScrollRef.current && Platform.OS === 'web') {
+                        savedHomeScrollY.current = mainScrollRef.current.getScrollableNode?.()?.scrollTop ?? 0;
+                      }
                       setSelectedProductId(p.id);
                       if (Platform.OS === 'web') {
                         window.history.pushState({}, '', `/collections/${p.id}`);
@@ -1598,6 +1604,11 @@ export default function App() {
             setTimeout(() => {
               scrollRef.current?.scrollTo({ x: index * width, y: 0, animated: false });
               setCurrentIndex(index);
+              // Restore the home page scroll position so user lands back where they were
+              if (savedHomeScrollY.current > 0 && mainScrollRef.current) {
+                mainScrollRef.current.scrollTo({ y: savedHomeScrollY.current, animated: false });
+                savedHomeScrollY.current = 0;
+              }
             }, 100);
           }}
           initialConcern={selectedConcern}

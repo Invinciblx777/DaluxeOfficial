@@ -1784,7 +1784,7 @@ const ProductLandingPage = ({
                 </View>
               )}
               <View style={d.trustBadge}>
-                <Check color={GOLD} size={16} />
+                <Check color={'#22C55E'} size={16} />
                 <Text style={d.trustBadgeText}>Guaranteed authenticity</Text>
               </View>
             </View>
@@ -1921,7 +1921,7 @@ const ProductLandingPage = ({
           {!isMob && <View style={d.usageDividerV} />}
           {isMob && <View style={{ width: '100%', height: 1, backgroundColor: BORDER, marginVertical: 10 }} />}
           <View style={[d.usageCol, isMob && { flex: 0, minWidth: '100%' }]}>
-            <Text style={d.usageColTitle}>How to Use</Text>
+            <Text style={[d.usageColTitle, isMob && { marginTop: 8 }]}>How to Use</Text>
             <Text style={d.usageText}>{product.howToUse}</Text>
             <View style={{ height: 20 }} />
             <View style={d.usageWhenRow}>
@@ -1941,7 +1941,7 @@ const ProductLandingPage = ({
         <View style={d.claimsRow}>
           {product.claims.map((c, i) => (
             <View key={i} style={d.claimBadge}>
-              <Check color={product.themeColor} size={14} />
+              <Check color={'#22C55E'} size={14} />
               <Text style={d.claimText}>{c}</Text>
             </View>
           ))}
@@ -2021,7 +2021,7 @@ const StickyBottomBar = ({ product, onAddToCart }: { product: ProductType; onAdd
         </View>
         {!isMobile && <Text style={sb.size}>{product.size}</Text>}
         {!isMobile && <Text style={sb.price}>{product.priceDisplay}</Text>}
-        <TouchableOpacity style={[sb.cartBtn, isMobile && { width: 'auto' }]} onPress={() => onAddToCart(product, SW - 50, 40)} activeOpacity={0.8}>
+        <TouchableOpacity style={[sb.cartBtn, isMobile && { flexShrink: 0 }]} onPress={() => onAddToCart(product, SW - 50, 40)} activeOpacity={0.8}>
           <LinearGradient colors={['#C8A96A', '#A8843B']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ paddingHorizontal: isMobile ? 16 : 28, paddingVertical: isMobile ? 10 : 12, borderRadius: 12 }}>
             <Text style={sb.cartBtnText}>{isMobile ? 'ADD' : 'ADD TO CART'}</Text>
           </LinearGradient>
