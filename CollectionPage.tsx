@@ -1905,33 +1905,66 @@ const ProductLandingPage = ({
 
       {/* ── Section 6: Texture & How to Use ── */}
       <View style={[d.usageSection, isMob && { paddingHorizontal: 16, paddingVertical: 48 }]}>
-        <View style={[d.usageGrid, isMob && { flexDirection: 'column', gap: 40 }]}>
-          <View style={[d.usageCol, isMob && { flex: 0, minWidth: '100%' }]}>
-            <Text style={d.usageColTitle}>Texture & Feel</Text>
-            {product.id === 'nightcream' && (
-              <View style={{ width: '100%', height: 200, borderRadius: 16, overflow: 'hidden', marginBottom: 20, backgroundColor: '#F8F8F8' }}>
-                <Image source={require('./assets/nightcream2.png')} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+        {isMob ? (
+          /* ── MOBILE: plain vertical stack, no flex grid to avoid flexWrap+column collision ── */
+          <View style={{ flexDirection: 'column', width: '100%' }}>
+            {/* Col 1: Texture & Fragrance */}
+            <View style={{ width: '100%' }}>
+              <Text style={d.usageColTitle}>Texture & Feel</Text>
+              {product.id === 'nightcream' && (
+                <View style={{ width: '100%', height: 200, borderRadius: 16, overflow: 'hidden', marginBottom: 20, backgroundColor: '#F8F8F8' }}>
+                  <Image source={require('./assets/nightcream2.png')} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                </View>
+              )}
+              <Text style={d.usageText}>{product.texture}</Text>
+              <View style={{ height: 20 }} />
+              <Text style={d.usageSmallLabel}>Fragrance</Text>
+              <Text style={d.usageText}>{product.fragrance}</Text>
+            </View>
+            {/* Divider */}
+            <View style={{ width: '100%', height: 1, backgroundColor: BORDER, marginVertical: 28 }} />
+            {/* Col 2: How to Use */}
+            <View style={{ width: '100%' }}>
+              <Text style={d.usageColTitle}>How to Use</Text>
+              <Text style={d.usageText}>{product.howToUse}</Text>
+              <View style={{ height: 20 }} />
+              <View style={d.usageWhenRow}>
+                {product.whenToUse.toLowerCase().includes('night') && <Moon color={product.themeColor} size={18} />}
+                {(product.whenToUse.toLowerCase().includes('morning') || product.whenToUse.toLowerCase().includes('am')) && <Sun color={product.themeColor} size={18} />}
+                {product.whenToUse.toLowerCase().includes('daily') && <Sparkles color={product.themeColor} size={18} />}
+                <Text style={d.usageWhenText}>{product.whenToUse}</Text>
               </View>
-            )}
-            <Text style={d.usageText}>{product.texture}</Text>
-            <View style={{ height: 20 }} />
-            <Text style={d.usageSmallLabel}>Fragrance</Text>
-            <Text style={d.usageText}>{product.fragrance}</Text>
-          </View>
-          {!isMob && <View style={d.usageDividerV} />}
-          {isMob && <View style={{ width: '100%', height: 1, backgroundColor: BORDER, marginVertical: 10 }} />}
-          <View style={[d.usageCol, isMob && { flex: 0, minWidth: '100%' }]}>
-            <Text style={[d.usageColTitle, isMob && { marginTop: 8 }]}>How to Use</Text>
-            <Text style={d.usageText}>{product.howToUse}</Text>
-            <View style={{ height: 20 }} />
-            <View style={d.usageWhenRow}>
-              {product.whenToUse.toLowerCase().includes('night') && <Moon color={product.themeColor} size={18} />}
-              {(product.whenToUse.toLowerCase().includes('morning') || product.whenToUse.toLowerCase().includes('am')) && <Sun color={product.themeColor} size={18} />}
-              {product.whenToUse.toLowerCase().includes('daily') && <Sparkles color={product.themeColor} size={18} />}
-              <Text style={d.usageWhenText}>{product.whenToUse}</Text>
             </View>
           </View>
-        </View>
+        ) : (
+          /* ── DESKTOP: original side-by-side grid ── */
+          <View style={d.usageGrid}>
+            <View style={d.usageCol}>
+              <Text style={d.usageColTitle}>Texture & Feel</Text>
+              {product.id === 'nightcream' && (
+                <View style={{ width: '100%', height: 200, borderRadius: 16, overflow: 'hidden', marginBottom: 20, backgroundColor: '#F8F8F8' }}>
+                  <Image source={require('./assets/nightcream2.png')} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                </View>
+              )}
+              <Text style={d.usageText}>{product.texture}</Text>
+              <View style={{ height: 20 }} />
+              <Text style={d.usageSmallLabel}>Fragrance</Text>
+              <Text style={d.usageText}>{product.fragrance}</Text>
+            </View>
+            <View style={d.usageDividerV} />
+            <View style={d.usageCol}>
+              <Text style={d.usageColTitle}>How to Use</Text>
+              <Text style={d.usageText}>{product.howToUse}</Text>
+              <View style={{ height: 20 }} />
+              <View style={d.usageWhenRow}>
+                {product.whenToUse.toLowerCase().includes('night') && <Moon color={product.themeColor} size={18} />}
+                {(product.whenToUse.toLowerCase().includes('morning') || product.whenToUse.toLowerCase().includes('am')) && <Sun color={product.themeColor} size={18} />}
+                {product.whenToUse.toLowerCase().includes('daily') && <Sparkles color={product.themeColor} size={18} />}
+                <Text style={d.usageWhenText}>{product.whenToUse}</Text>
+              </View>
+            </View>
+          </View>
+        )}
       </View>
 
       {/* ── Section 7: This product is ideal for ── */}
