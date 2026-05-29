@@ -243,7 +243,7 @@ export default function ComboDetailPage({
                 <GoldBtn label="Add Combo to Cart" onPress={handleAddToCart} icon={ShoppingCart} full />
               </View>
               <TouchableOpacity onPress={handleShare} activeOpacity={0.8}
-                style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: GOLD_GLOW,
+                style={{ flexShrink: 0, width: 48, height: 48, borderRadius: 24, backgroundColor: GOLD_GLOW,
                   borderWidth: 1, borderColor: GOLD_BDR, justifyContent: 'center', alignItems: 'center',
                   alignSelf: 'center' }}>
                 <Share2 color={GOLD} size={20} />
@@ -399,7 +399,7 @@ export default function ComboDetailPage({
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <GoldBtn label="Add to Cart" onPress={handleAddToCart} icon={ShoppingCart} />
           <TouchableOpacity onPress={handleShare} activeOpacity={0.8}
-            style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: GOLD_GLOW,
+            style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 21, backgroundColor: GOLD_GLOW,
               borderWidth: 1, borderColor: GOLD_BDR, justifyContent: 'center', alignItems: 'center', marginLeft: 10 }}>
             <Share2 color={GOLD} size={18} />
           </TouchableOpacity>

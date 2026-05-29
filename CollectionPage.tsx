@@ -3225,6 +3225,7 @@ const d = StyleSheet.create({
     marginTop: 10, lineHeight: 16, letterSpacing: 0.5,
   },
   shareButtonContainer: {
+    flexShrink: 0,
     width: 48,
     height: 48,
     borderRadius: 12,
