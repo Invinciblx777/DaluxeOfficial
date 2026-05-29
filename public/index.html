@@ -232,7 +232,46 @@
       </div>
     </noscript>
     <!-- The root element for your Expo app. -->
-    <div id="root"></div>
+    <div id="root">
+      <!-- Pre-rendered content for Google & search crawlers (hidden once JS loads) -->
+      <div id="seo-prerender" style="font-family:Georgia,serif;max-width:900px;margin:0 auto;padding:40px 20px;color:#1A1A1A;line-height:1.8;">
+        <h1 style="font-size:2.2rem;font-weight:400;letter-spacing:2px;margin-bottom:8px;">DA LUXE — Premium Botanical Skincare &amp; Haircare</h1>
+        <p style="font-size:1rem;color:#555;margin-bottom:32px;">Dermal-Grade Botanical Formula | ISO &amp; GMP Certified | Made in India | Sulphate-Free | Paraben-Free | Gentle on Sensitive Skin</p>
+
+        <h2 style="font-size:1.4rem;font-weight:400;margin-bottom:16px;">Luxury Skincare &amp; Haircare Products</h2>
+        <p style="margin-bottom:24px;">Daluxe Official brings you a range of premium, dermal-grade botanical skincare and haircare products crafted for sensitive skin. Each formula is sulphate-free, paraben-free, silicone-free and ISO &amp; GMP certified — made in India for the modern luxury consumer.</p>
+
+        <h3 style="font-size:1.1rem;margin-bottom:8px;">Gold Glow Facewash — ₹249 (100ml)</h3>
+        <p style="margin-bottom:16px;">Ultra Sensitive Gold Glow crystal clear gel facewash with real 24K gold flakes. Gently cleanses with herbal extracts, hydrosols and Rose Hydrosol. Ideal for all skin types including sensitive skin. Free from sulphates, parabens and soap. pH balanced and dermatologically inspired.</p>
+
+        <h3 style="font-size:1.1rem;margin-bottom:8px;">Smooth &amp; Shine Hair Serum — ₹349 (30ml)</h3>
+        <p style="margin-bottom:16px;">Ultra Sensitive weightless hair serum for natural shine, frizz control and dry hair repair. Zero silicone, lightweight and non-sticky. Botanical formula with Argan Oil, Bhringraj and Ceramides. Suitable for daily use after wash or styling.</p>
+
+        <h3 style="font-size:1.1rem;margin-bottom:8px;">Glow &amp; Correct Face Serum — ₹449 (30ml)</h3>
+        <p style="margin-bottom:16px;">Ultra Sensitive glow and pigmentation correction face serum. Features Bakuchiol (nature's retinol alternative), Niacinamide, Vitamin C and Kojic Acid for radiant, even-toned skin. Lightweight gel-serum texture, non-sticky. Ideal for acne marks, dullness and sensitivity.</p>
+
+        <h3 style="font-size:1.1rem;margin-bottom:8px;">Overnight Repair Night Cream — ₹399 (30g)</h3>
+        <p style="margin-bottom:16px;">Ultra Sensitive overnight restoration cream for deep nourishment and skin renewal while you sleep. Enriched with Retinol, Peptides, Ceramides and Hyaluronic Acid. Lightweight, creamy, non-greasy. Dermal-grade formula for sensitive skin care.</p>
+
+        <h3 style="font-size:1.1rem;margin-bottom:8px;">Complete Skincare Combo — Free Facewash Included</h3>
+        <p style="margin-bottom:24px;">Shop our complete skincare routine combo at one price. Gold Glow Facewash + Glow &amp; Correct Face Serum + Overnight Repair Night Cream — complete routines at one price, with a surprise freebie inside every combo plus FREE 50ml Facewash with every order.</p>
+
+        <p style="font-size:0.9rem;color:#777;">
+          <a href="https://daluxeofficial.in/collections" style="color:#B8962E;">Shop All Products</a> |
+          <a href="https://daluxeofficial.in/collections/facewash" style="color:#B8962E;">Gold Glow Facewash</a> |
+          <a href="https://daluxeofficial.in/collections/hairserum" style="color:#B8962E;">Hair Serum</a> |
+          <a href="https://daluxeofficial.in/collections/faceserum" style="color:#B8962E;">Face Serum</a> |
+          <a href="https://daluxeofficial.in/collections/nightcream" style="color:#B8962E;">Night Cream</a>
+        </p>
+      </div>
+    </div>
+    <script>
+      // Hide the pre-rendered SEO content once the React app loads
+      window.__hideSEOPrerender = function() {
+        var el = document.getElementById('seo-prerender');
+        if (el) el.style.display = 'none';
+      };
+    </script>
 
     <!-- PWA Service Worker Registration -->
     <script>

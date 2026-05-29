@@ -691,6 +691,14 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
 
+  // Hide the pre-rendered SEO static content the moment the React app mounts
+  React.useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const el = document.getElementById('seo-prerender');
+      if (el) el.style.display = 'none';
+    }
+  }, []);
+
   React.useEffect(() => {
     let isMounted = true;
     let subscription: any = null;
