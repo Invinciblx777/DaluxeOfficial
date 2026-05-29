@@ -355,9 +355,9 @@ const MOCK_RESULTS = {
   morningRoutine: ['Gold Glow Face Wash', 'Ultra Sensitive Serum', 'Hydrating Moisturiser', 'SPF 50 Sunscreen'],
   nightRoutine: ['Gold Glow Face Wash', 'Repair Night Cream', 'Rosehip Oil'],
   products: [
-    { id: 1, name: 'GOLD GLOW\nFACE WASH',      price: '₹299', img: require('./assets/facewashproductcard.png') },
-    { id: 2, name: 'ULTRA SENSITIVE\nFACE SERUM', price: '₹449', img: require('./assets/faceserumproductcard.png') },
-    { id: 3, name: 'REPAIR NIGHT\nCREAM',         price: '₹399', img: require('./assets/night cream product cARD.png') },
+    { id: 1, name: 'GOLD GLOW\nFACE WASH',      price: '₹249', img: require('./assets/facewash_main.png') },
+    { id: 2, name: 'ULTRA SENSITIVE\nFACE SERUM', price: '₹449', img: require('./assets/faceserum_main.png') },
+    { id: 3, name: 'REPAIR NIGHT\nCREAM',         price: '₹399', img: require('./assets/nightcream_main.png') },
   ],
 };
 

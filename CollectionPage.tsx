@@ -105,7 +105,15 @@ export const COLLECTION_PRODUCTS = [
     size: '100 ML',
     sizeDetail: '100 ml (3.38 fl oz)',
     rating: 4.8,
-    image: require('./assets/facewashproductcard.png'),
+    image: require('./assets/facewash_main.png'),
+    gallery: [
+      require('./assets/facewash_main.png'),
+      require('./assets/facewash_2.png'),
+      require('./assets/facewash_3.png'),
+      require('./assets/facewash_4.png'),
+      require('./assets/facewash_5.png'),
+      require('./assets/facewash_6.png'),
+    ],
     themeColor: '#4A7C59',
     themeBg: '#EDF4ED',
     themeGradient: ['#EDF4ED', '#F5F9F5'] as [string, string],
@@ -165,7 +173,15 @@ export const COLLECTION_PRODUCTS = [
     size: '30 ML',
     sizeDetail: '30 ml (1.0 fl oz)',
     rating: 4.8,
-    image: require('./assets/hairserumproductcard.png'),
+    image: require('./assets/hairserum_main.png'),
+    gallery: [
+      require('./assets/hairserum_main.png'),
+      require('./assets/hairserum_2.png'),
+      require('./assets/hairserum_3.png'),
+      require('./assets/hairserum_4.png'),
+      require('./assets/hairserum_5.png'),
+      require('./assets/hairserum_6.png'),
+    ],
     themeColor: '#108cba',
     themeBg: '#E8F4FA',
     themeGradient: ['#E8F4FA', '#F0F8FC'] as [string, string],
@@ -222,7 +238,15 @@ export const COLLECTION_PRODUCTS = [
     size: '30 ML',
     sizeDetail: '30 ml (1.0 fl oz)',
     rating: 4.8,
-    image: require('./assets/faceserumproductcard.png'),
+    image: require('./assets/faceserum_main.png'),
+    gallery: [
+      require('./assets/faceserum_main.png'),
+      require('./assets/faceserum_2.png'),
+      require('./assets/faceserum_3.png'),
+      require('./assets/faceserum_4.png'),
+      require('./assets/faceserum_5.png'),
+      require('./assets/faceserum_6.png'),
+    ],
     themeColor: '#1BA8A0',
     themeBg: '#E5F5F3',
     themeGradient: ['#E5F5F3', '#EFF9F8'] as [string, string],
@@ -279,13 +303,14 @@ export const COLLECTION_PRODUCTS = [
     size: '30 G',
     sizeDetail: '30g / 1.0 fl oz',
     rating: 4.8,
-    image: require('./assets/nightcream1.png'),
+    image: require('./assets/nightcream_main.png'),
     gallery: [
-      require('./assets/nightcream1.png'),
-      require('./assets/nightcream2.png'),
-      require('./assets/nightcream3.png'),
-      require('./assets/nightcream4.png'),
-      require('./assets/nightcream5.png'),
+      require('./assets/nightcream_main.png'),
+      require('./assets/nightcream_g2.png'),
+      require('./assets/nightcream_g3.png'),
+      require('./assets/nightcream_g4.png'),
+      require('./assets/nightcream_g5.png'),
+      require('./assets/nightcream_g6.png'),
     ],
     video: require('./assets/Skincare_jar_rotating_on_pedestal_delpmaspu_.mp4'),
     themeColor: '#8B2252',
@@ -330,7 +355,7 @@ export const COLLECTION_PRODUCTS = [
       { text: 'Deep hydration with soft glow. My skin has never been this calm overnight.', author: 'Pooja V.', rating: 5 },
       { text: 'Lightweight and non-greasy formula that actually works. My acne hasn’t flared up since!', author: 'Shruti L.', rating: 5 },
     ],
-    storyImage: require('./assets/nightcream3.png'),
+    storyImage: require('./assets/nightcream_g3.png'),
   },
   {
     id: 'hairoil',
@@ -345,7 +370,15 @@ export const COLLECTION_PRODUCTS = [
     size: '100 ML',
     sizeDetail: '100 ml (3.38 fl oz)',
     rating: 4.7,
-    image: require('./assets/hairoil.jpeg'),
+    image: require('./assets/hairoil_main.png'),
+    gallery: [
+      require('./assets/hairoil_main.png'),
+      require('./assets/hairoil_2.png'),
+      require('./assets/hairoil_3.png'),
+      require('./assets/hairoil_4.png'),
+      require('./assets/hairoil_5.png'),
+      require('./assets/hairoil_6.png'),
+    ],
     themeColor: '#C9A227',
     themeBg: '#FDFBF7',
     themeGradient: ['#FDFBF7', '#F6F0DF'] as [string, string],
@@ -404,7 +437,15 @@ export const COLLECTION_PRODUCTS = [
     size: '100 ML',
     sizeDetail: '100 ml (3.38 fl oz)',
     rating: 4.7,
-    image: require('./assets/hairshampoo.jpeg'),
+    image: require('./assets/shampoo_main.png'),
+    gallery: [
+      require('./assets/shampoo_main.png'),
+      require('./assets/shampoo_2.png'),
+      require('./assets/shampoo_3.png'),
+      require('./assets/shampoo_4.png'),
+      require('./assets/shampoo_5.png'),
+      require('./assets/shampoo_6.png'),
+    ],
     themeColor: '#7A918D',
     themeBg: '#F2F5F4',
     themeGradient: ['#F2F5F4', '#E8ECEB'] as [string, string],
@@ -1847,10 +1888,10 @@ const ProductLandingPage = ({
            <Text style={[d.sectionHeading, { textAlign: 'center', marginBottom: 40 }]}>Luxury in Every Detail</Text>
            <View style={{ flexDirection: isMob ? 'column' : 'row', gap: 20, paddingHorizontal: isMob ? 16 : 40, justifyContent: 'center' }}>
               <Animated.View entering={FadeInUp.delay(100)} style={{ flex: 1, height: isMob ? 300 : 500, borderRadius: 20, overflow: 'hidden' }}>
-                <Image source={require('./assets/nightcream4.png')} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                <Image source={require('./assets/nightcream_g4.png')} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
               </Animated.View>
               <Animated.View entering={FadeInUp.delay(300)} style={{ flex: 1, height: isMob ? 300 : 500, borderRadius: 20, overflow: 'hidden' }}>
-                <Image source={require('./assets/nightcream5.png')} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                <Image source={require('./assets/nightcream_g5.png')} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
               </Animated.View>
            </View>
         </View>
@@ -1913,7 +1954,7 @@ const ProductLandingPage = ({
               <Text style={d.usageColTitle}>Texture & Feel</Text>
               {product.id === 'nightcream' && (
                 <View style={{ width: '100%', height: 200, borderRadius: 16, overflow: 'hidden', marginBottom: 20, backgroundColor: '#F8F8F8' }}>
-                  <Image source={require('./assets/nightcream2.png')} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  <Image source={require('./assets/nightcream_g2.png')} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                 </View>
               )}
               <Text style={d.usageText}>{product.texture}</Text>
@@ -1943,7 +1984,7 @@ const ProductLandingPage = ({
               <Text style={d.usageColTitle}>Texture & Feel</Text>
               {product.id === 'nightcream' && (
                 <View style={{ width: '100%', height: 200, borderRadius: 16, overflow: 'hidden', marginBottom: 20, backgroundColor: '#F8F8F8' }}>
-                  <Image source={require('./assets/nightcream2.png')} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  <Image source={require('./assets/nightcream_g2.png')} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                 </View>
               )}
               <Text style={d.usageText}>{product.texture}</Text>
