@@ -56,7 +56,7 @@ const PRODUCTS = [
     size: '30 ml (1.0 fl oz)',
     theme: { text: '#108cbaff', subText: '#0b0b0bff', accent: '#3d3d3dff', shadow: 'rgba(229, 0, 0, 0.6)', alignClass: 'flex-start', textAlign: 'left' as const },
     benefits: ['Weightless.', 'Natural Shine.', 'Zero Silicone.'],
-    image: require('./assets/hairserum_main.png'),
+    image: require('./assets/product2.png'),
     bgImage: require('./assets/bg_face_serum.png')
   },
   {
@@ -69,7 +69,7 @@ const PRODUCTS = [
     size: '30 ml (1.0 fl oz)',
     theme: { text: '#1A1A1A', subText: '#2A2A2A', accent: '#C9A84C', shadow: 'rgba(255,255,255,0.5)', alignClass: 'center', textAlign: 'center' as const },
     benefits: ['Correct Tone.', 'Boost Glow.', 'Stay Calm.'],
-    image: require('./assets/faceserum_main.png'),
+    image: require('./assets/product1.png'),
     bgImage: require('./assets/background2.png')
   },
   {
@@ -82,7 +82,7 @@ const PRODUCTS = [
     size: '30g (1.0 oz)',
     theme: { text: '#6c0e0eff', subText: '#000000ff', accent: '#972020ff', shadow: 'rgba(87, 27, 51, 0.7)', alignClass: 'flex-end', textAlign: 'right' as const },
     benefits: ['Repair Overnight.', 'Restore Calm.', 'Wake Up Renewed.'],
-    image: require('./assets/nightcream_main.png'),
+    image: require('./assets/product3.png'),
     bgImage: require('./assets/bg_restoration_cream.png')
   }
 ];
