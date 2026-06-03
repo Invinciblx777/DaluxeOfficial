@@ -108,11 +108,11 @@ export const COLLECTION_PRODUCTS = [
     image: require('./assets/facewash_main.png'),
     gallery: [
       require('./assets/facewash_main.png'),
-      require('./assets/facewash_6.png'),
       require('./assets/facewash_4.png'),
+      require('./assets/facewash_6.png'),
       require('./assets/facewash_2.png'),
-      require('./assets/facewash_5.png'),
       require('./assets/facewash_3.png'),
+      require('./assets/facewash_5.png'),
     ],
     themeColor: '#4A7C59',
     themeBg: '#EDF4ED',
@@ -179,8 +179,8 @@ export const COLLECTION_PRODUCTS = [
       require('./assets/hairserum_6.png'),
       require('./assets/hairserum_4.png'),
       require('./assets/hairserum_2.png'),
-      require('./assets/hairserum_5.png'),
       require('./assets/hairserum_3.png'),
+      require('./assets/hairserum_5.png'),
     ],
     themeColor: '#108cba',
     themeBg: '#E8F4FA',
@@ -241,10 +241,10 @@ export const COLLECTION_PRODUCTS = [
     image: require('./assets/faceserum_main.png'),
     gallery: [
       require('./assets/faceserum_main.png'),
-      require('./assets/faceserum_6.png'),
-      require('./assets/faceserum_4.png'),
       require('./assets/faceserum_2.png'),
+      require('./assets/faceserum_4.png'),
       require('./assets/faceserum_5.png'),
+      require('./assets/faceserum_6.png'),
       require('./assets/faceserum_3.png'),
     ],
     themeColor: '#1BA8A0',
@@ -306,11 +306,11 @@ export const COLLECTION_PRODUCTS = [
     image: require('./assets/nightcream_main.png'),
     gallery: [
       require('./assets/nightcream_main.png'),
-      require('./assets/nightcream_g6.png'),
       require('./assets/nightcream_g4.png'),
       require('./assets/nightcream_g2.png'),
       require('./assets/nightcream_g5.png'),
       require('./assets/nightcream_g3.png'),
+      require('./assets/nightcream_g6.png'),
     ],
     video: require('./assets/Skincare_jar_rotating_on_pedestal_delpmaspu_.mp4'),
     themeColor: '#8B2252',
@@ -373,11 +373,11 @@ export const COLLECTION_PRODUCTS = [
     image: require('./assets/hairoil_main.png'),
     gallery: [
       require('./assets/hairoil_main.png'),
+      require('./assets/hairoil_5.png'),
+      require('./assets/hairoil_2.png'),
+      require('./assets/hairoil_3.png'),
       require('./assets/hairoil_6.png'),
       require('./assets/hairoil_4.png'),
-      require('./assets/hairoil_2.png'),
-      require('./assets/hairoil_5.png'),
-      require('./assets/hairoil_3.png'),
     ],
     themeColor: '#C9A227',
     themeBg: '#FDFBF7',
@@ -440,8 +440,8 @@ export const COLLECTION_PRODUCTS = [
     image: require('./assets/shampoo_main.png'),
     gallery: [
       require('./assets/shampoo_main.png'),
-      require('./assets/shampoo_6.png'),
       require('./assets/shampoo_4.png'),
+      require('./assets/shampoo_6.png'),
       require('./assets/shampoo_2.png'),
       require('./assets/shampoo_5.png'),
       require('./assets/shampoo_3.png'),
@@ -1732,7 +1732,7 @@ const ShareButton = ({ product, onCopied }: { product: ProductType; onCopied: ()
   }));
 
   return (
-    <TouchableOpacity onPress={handlePress} activeOpacity={0.8} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.8} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ flexShrink: 0, flexGrow: 0, flexBasis: 48 }}>
       <Animated.View style={[animStyle, d.shareButtonContainer]}>
         <Share2 color={GOLD} size={20} />
       </Animated.View>
