@@ -77,12 +77,27 @@ async function handleRequest(req: NextRequest) {
   const action = searchParams.get('action') || 'verify';
 
   if (action === 'test') {
-    return NextResponse.json({
+    // Safe diagnostic: reports config + whether a PhonePe access token can be
+    // obtained. Never returns secret values — only booleans and the live host.
+    const diag: any = {
+      PHONEPE_ENV: process.env.PHONEPE_ENV || '(unset → defaults to UAT sandbox)',
+      usingHost: PHONEPE_HOST,
+      usingAuthHost: PHONEPE_AUTH_HOST,
+      hasClientId: !!process.env.PHONEPE_CLIENT_ID,
+      hasClientSecret: !!process.env.PHONEPE_CLIENT_SECRET,
+      clientVersion: PHONEPE_CLIENT_VERSION,
       NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
       NEXT_PUBLIC_ADMIN_URL: process.env.NEXT_PUBLIC_ADMIN_URL,
       computedAppUrl: (process.env.NEXT_PUBLIC_APP_URL || 'https://daluxeofficial.in').replace(/\/$/, ''),
-      computedAdminUrl: (process.env.NEXT_PUBLIC_ADMIN_URL || 'https://daluxeadminpanel.vercel.app').replace(/\/$/, '')
-    });
+      computedAdminUrl: (process.env.NEXT_PUBLIC_ADMIN_URL || 'https://daluxeadminpanel.vercel.app').replace(/\/$/, ''),
+    };
+    try {
+      const token = await getAccessToken();
+      diag.tokenFetch = token ? 'SUCCESS — credentials valid' : 'FAILED — no token returned';
+    } catch (e: any) {
+      diag.tokenFetch = `FAILED — ${e?.message || 'unknown error'}`;
+    }
+    return NextResponse.json(diag);
   }
 
   // ─── INITIATE ───

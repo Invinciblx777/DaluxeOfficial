@@ -1383,11 +1383,13 @@ const dc = StyleSheet.create({
 const ProductImageCarousel = ({ product, isMob }: { product: ProductType; isMob: boolean }) => {
   const { width: winW } = useWindowDimensions();
   const [activeIndex, setActiveIndex] = useState(0);
-  const [containerWidth, setContainerWidth] = useState(isMob ? winW : 480);
+  // Subtract the hero's 16px horizontal padding (each side) so the carousel never
+  // renders wider than the viewport and triggers page-level horizontal scroll.
+  const [containerWidth, setContainerWidth] = useState(isMob ? winW - 32 : 480);
   const gallery = (product.gallery && product.gallery.length > 0) ? product.gallery : [product.image];
   const scrollRef = useRef<ScrollView>(null);
 
-  const activeWidth = (containerWidth && containerWidth > 200) ? containerWidth : (isMob ? winW : 480);
+  const activeWidth = (containerWidth && containerWidth > 200) ? containerWidth : (isMob ? winW - 32 : 480);
 
   const onScroll = (event: any) => {
     const w = activeWidth;
@@ -1732,7 +1734,7 @@ const ShareButton = ({ product, onCopied }: { product: ProductType; onCopied: ()
   }));
 
   return (
-    <TouchableOpacity onPress={handlePress} activeOpacity={0.8} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ flexShrink: 0, flexGrow: 0, flexBasis: 48 }}>
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.8} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ flexShrink: 0, flexGrow: 0, width: 48 }}>
       <Animated.View style={[animStyle, d.shareButtonContainer]}>
         <Share2 color={GOLD} size={20} />
       </Animated.View>
@@ -1808,7 +1810,9 @@ const ProductLandingPage = ({
             </View>
 
             <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', alignSelf: isMob ? 'center' : 'flex-start', width: '100%', maxWidth: 400 }}>
-              <View style={{ flex: 1 }}>
+              {/* minWidth:0 lets the cart button shrink so the fixed-width share button
+                  can never be pushed past the screen edge on narrow phones */}
+              <View style={{ flex: 1, minWidth: 0 }}>
                 <GoldCartButton
                   onPress={(x, y) => onAddToCart(product, x, y)}
                   label="ADD TO CART"
