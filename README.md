@@ -47,8 +47,8 @@ The project is structured for massive scalability, separating the customer store
 | `middleware.ts` | Edge-level authentication guards for the administrative panel |
 
 ### ⚡ API & Integrations Layer (`/api` & `lib/`)
-- **Payment Gateway**: Dual integration with **PhonePe** and **Razorpay** for industry-leading success rates.
-- **Logistics Engine**: **Shiprocket** integration for automated label generation and real-time tracking.
+- **Payment Gateway**: **PhonePe** integration for industry-leading success rates.
+- **Logistics Engine**: **Shadowfax** integration for automated label generation and real-time tracking.
 - **Auth Layer**: **Supabase Auth** with full PKCE flow and Google OAuth integration.
 
 ---

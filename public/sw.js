@@ -38,13 +38,13 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // Bypass non-GET requests, DevTools, browser extensions, Razorpay, or Supabase dynamic auth endpoints
+  // Bypass non-GET requests, DevTools, browser extensions, PhonePe, or Supabase dynamic auth endpoints
   if (
     request.method !== 'GET' ||
     !url.protocol.startsWith('http') ||
     url.pathname.includes('/api/') ||
     url.hostname.includes('supabase.co') ||
-    url.hostname.includes('razorpay.com')
+    url.hostname.includes('phonepe.com')
   ) {
     return; // Pass through to network natively
   }

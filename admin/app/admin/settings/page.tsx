@@ -94,8 +94,8 @@ export default function SettingsPage() {
           </div>
           <div className="space-y-3">
             {[
-              { label: 'Razorpay', status: 'Connected', color: '#4ADE80' },
-              { label: 'Shiprocket', status: 'Connected', color: '#4ADE80' },
+              { label: 'PhonePe', status: 'Connected', color: '#4ADE80' },
+              { label: 'Shadowfax', status: 'Connected', color: '#4ADE80' },
               { 
                 label: 'Supabase', 
                 status: isSupabaseConfigured ? 'Connected' : 'Not configured', 

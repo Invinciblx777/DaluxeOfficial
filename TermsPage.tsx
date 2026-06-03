@@ -39,7 +39,7 @@ const SECTIONS = [
   },
   {
     title: 'Payments & Charges',
-    content: 'All prices displayed on the Platform are in Indian Rupees (INR) and are inclusive of applicable taxes unless stated otherwise.\n\nPayments are processed through secure third-party payment gateways (PhonePe/Razorpay). DA LUXE does not store your payment card details.\n\nDA LUXE reserves the right to modify prices at any time without prior notice. However, any changes will not affect orders that have already been confirmed.',
+    content: 'All prices displayed on the Platform are in Indian Rupees (INR) and are inclusive of applicable taxes unless stated otherwise.\n\nPayments are processed through the secure third-party payment gateway PhonePe. DA LUXE does not store your payment card details.\n\nDA LUXE reserves the right to modify prices at any time without prior notice. However, any changes will not affect orders that have already been confirmed.',
   },
   {
     title: 'Indemnification',

@@ -174,12 +174,12 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
 
         const res = await fetch(`${API_URL}/api/phonepe?action=initiate`, {
           method: 'POST',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ 
-            amount: grandTotal, 
+          body: JSON.stringify({
+            amount: grandTotal,
             cart_items: items.map(i => ({ product_id: i.id, name: i.name, quantity: i.quantity, price: i.price })),
             shipping_address: {
               name: form.name, phone: form.phone,
@@ -189,16 +189,24 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
             email: form.email
           })
         });
-        const data = await res.json();
-        if (data.success && data.data?.redirectUrl) {
+
+        // Parse defensively: a misrouted call can return HTML (the SPA shell) instead
+        // of JSON, which would otherwise throw and be masked as a generic network error.
+        const raw = await res.text();
+        let data: any = null;
+        try { data = raw ? JSON.parse(raw) : null; } catch { data = null; }
+
+        if (data?.success && data.data?.redirectUrl) {
           window.location.href = data.data.redirectUrl;
         } else {
           setLoading(false);
-          alert('Payment gateway error: ' + (data.error || 'Could not initiate payment'));
+          const reason = data?.error
+            || (!res.ok ? `Payment service returned ${res.status}` : 'Could not initiate payment');
+          alert('Payment gateway error: ' + reason);
         }
-      } catch (err: any) { 
-        setLoading(false); 
-        alert('Network error connecting to payment gateway.'); 
+      } catch (err: any) {
+        setLoading(false);
+        alert('Could not reach the payment gateway: ' + (err?.message || 'network error') + '. Please try again.');
       }
     } else {
        setLoading(false); alert('Native payments must use Deep Links or WebViews for PhonePe');

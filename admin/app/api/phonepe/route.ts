@@ -50,6 +50,20 @@ async function getUser(req: NextRequest) {
   return user;
 }
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Max-Age': '86400',
+};
+
+// Respond to CORS preflight. Without this, cross-origin POSTs from the storefront
+// (Content-Type: application/json + Authorization header) fail the preflight with a
+// 405 and the browser reports a generic "network error". See checkout flow.
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
+
 export async function GET(req: NextRequest) {
   return handleRequest(req);
 }

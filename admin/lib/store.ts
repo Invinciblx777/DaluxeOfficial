@@ -3,6 +3,31 @@ import { persist } from 'zustand/middleware';
 import { supabaseAdmin } from './supabase/admin-service';
 import { STATIC_PRODUCTS } from './static-products';
 
+// Read the logged-in admin's Supabase access token from localStorage (same storage
+// the Expo SPA + admin layout use) so we can authorize calls to the admin API routes.
+// Writes must go through those server routes — the browser client only has the anon
+// key and no user JWT, so RLS blocks direct table writes.
+function getAccessToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const supabaseUrl =
+      window.localStorage.getItem('NEXT_PUBLIC_SUPABASE_URL') ||
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const ref = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
+    if (!ref) return null;
+    const raw = window.localStorage.getItem(`sb-${ref}-auth-token`);
+    if (!raw) return null;
+    return JSON.parse(raw)?.access_token || null;
+  } catch {
+    return null;
+  }
+}
+
+function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const token = getAccessToken();
+  return token ? { Authorization: `Bearer ${token}`, ...extra } : { ...extra };
+}
+
 // ─────────────────────────────────────────
 // TYPES
 // ─────────────────────────────────────────
@@ -192,7 +217,7 @@ export const useAdminStore = create<AdminStore>()(
       fetchOrders: async () => {
         set({ isLoading: true });
         try {
-          const res = await fetch('/api/admin/orders');
+          const res = await fetch('/api/admin/orders', { headers: authHeaders() });
           const json = await res.json();
           if (json.success && json.data) {
             const data = json.data;
@@ -266,9 +291,10 @@ export const useAdminStore = create<AdminStore>()(
         };
 
         try {
-          const { data, error } = await supabaseAdmin
-            .from('products')
-            .insert([{
+          const res = await fetch('/api/admin/products', {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ product: {
               name: p.name,
               slug,
               tagline: p.tagline,
@@ -288,16 +314,16 @@ export const useAdminStore = create<AdminStore>()(
               texture: p.texture,
               fragrance: p.fragrance,
               images: p.images
-            }])
-            .select()
-            .single();
-
-          if (!error && data) {
+            }}),
+          });
+          const json = await res.json();
+          if (res.ok && json.success) {
             await get().fetchProducts();
             return true;
           }
+          console.warn('Add product failed:', json.error);
         } catch (err) {
-          console.warn("Supabase insert failed, using offline fallback", err);
+          console.warn("Add product failed, using offline fallback", err);
         }
 
         // Fallback: Add directly to local Zustand store
@@ -323,9 +349,10 @@ export const useAdminStore = create<AdminStore>()(
           const slug = p.slug || generateSlug(p.name);
 
           try {
-            const { error } = await supabaseAdmin
-              .from('products')
-              .insert([{
+            const res = await fetch('/api/admin/products', {
+              method: 'POST',
+              headers: authHeaders({ 'Content-Type': 'application/json' }),
+              body: JSON.stringify({ product: {
                 name: p.name,
                 slug: slug,
                 tagline: p.tagline,
@@ -345,14 +372,14 @@ export const useAdminStore = create<AdminStore>()(
                 texture: p.texture,
                 fragrance: p.fragrance,
                 images: p.images
-              }]);
-              
-            if (!error) {
+              }}),
+            });
+            const json = await res.json();
+            if (res.ok && json.success) {
               await get().fetchProducts();
               return true;
-            } else {
-              console.error("Failed to insert static product:", error);
             }
+            console.error("Failed to insert static product:", json.error);
           } catch(err) {
             console.error("Failed to insert static product:", err);
           }
@@ -384,17 +411,19 @@ export const useAdminStore = create<AdminStore>()(
         if (updates.images !== undefined) dbUpdates.images = updates.images;
 
         try {
-          const { error } = await supabaseAdmin
-            .from('products')
-            .update(dbUpdates)
-            .eq('id', id);
-
-          if (!error) {
+          const res = await fetch('/api/admin/products', {
+            method: 'PATCH',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ id, updates: dbUpdates }),
+          });
+          const json = await res.json();
+          if (res.ok && json.success) {
             await get().fetchProducts();
             return true;
           }
+          console.warn('Update product failed:', json.error);
         } catch (err) {
-          console.warn("Supabase update failed, using offline fallback", err);
+          console.warn("Update product failed, using offline fallback", err);
         }
 
         // Fallback: Update local state directly
@@ -424,17 +453,18 @@ export const useAdminStore = create<AdminStore>()(
         }
 
         try {
-          const { error } = await supabaseAdmin
-            .from('products')
-            .delete()
-            .eq('id', id);
-
-          if (!error) {
+          const res = await fetch(`/api/admin/products?id=${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+            headers: authHeaders(),
+          });
+          const json = await res.json();
+          if (res.ok && json.success) {
             await get().fetchProducts();
             return true;
           }
+          console.warn('Delete product failed:', json.error);
         } catch (err) {
-          console.warn("Supabase delete failed, using offline fallback", err);
+          console.warn("Delete product failed, using offline fallback", err);
         }
 
         set((state) => ({
@@ -445,17 +475,19 @@ export const useAdminStore = create<AdminStore>()(
 
       updateOrderStatus: async (id, status) => {
         try {
-          const { error } = await supabaseAdmin
-            .from('orders')
-            .update({ status })
-            .eq('id', id);
-
-          if (!error) {
+          const res = await fetch('/api/admin/orders', {
+            method: 'PATCH',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ id, status }),
+          });
+          const json = await res.json();
+          if (res.ok && json.success) {
             await get().fetchOrders();
             return true;
           }
+          console.warn('Update order status failed:', json.error);
         } catch (err) {
-          console.warn("Supabase update order status failed", err);
+          console.warn('Update order status failed', err);
         }
         return false;
       },
