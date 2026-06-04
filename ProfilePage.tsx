@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Package, Truck, CheckCircle2, ChevronLeft, LogOut, ExternalLink, RefreshCcw, AlertCircle } from 'lucide-react-native';
 import { Image } from 'react-native';
 import { COLLECTION_PRODUCTS } from './CollectionPage';
+import { getApiBase } from './lib/apiBase';
 
 const GOLD = '#C9A227';
 const TEXT = '#1A1A1A';
@@ -40,7 +41,7 @@ export default function ProfilePage({ userEmail, onLogout, onBack }: { userEmail
       const { data: { session } } = await supabaseClient.auth.getSession();
       const token = session?.access_token || '';
 
-      const API_URL = (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL) || '';
+      const API_URL = getApiBase();
       const res = await fetch(`${API_URL}/api/orders/user`, {
         headers: {
           'Authorization': `Bearer ${token}`

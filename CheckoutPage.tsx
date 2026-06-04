@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ChevronLeft, ShoppingBag, MapPin, User, Lock, Check } from 'lucide-react-native';
 
 import { supabaseClient } from './lib/supabaseClient';
+import { getApiBase } from './lib/apiBase';
 
 export interface CheckoutItem {
   id: string;
@@ -70,7 +71,7 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
   const getShippingAmount = () => (shipping === 'CALCULATING' ? 0 : shipping);
   const displayShipping = shipping === 'CALCULATING' ? '...' : (shipping === 0 ? 'FREE' : `₹${shipping}`);
   const grandTotal = subtotal + getShippingAmount();
-  const API_URL = (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL) || '';
+  const API_URL = getApiBase();
 
   async function checkShipping(pincode: string) {
     if (!pincode || pincode.length < 6) return;

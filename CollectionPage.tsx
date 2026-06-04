@@ -34,6 +34,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { supabaseClient } from './lib/supabaseClient';
+import { getApiBase } from './lib/apiBase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Video, ResizeMode } from 'expo-av';
 import {
@@ -1189,7 +1190,7 @@ const DeliveryChecker = () => {
   const [result, setResult] = useState<null | { serviceable: boolean; rate: number; etd?: string }>(null);
   const [error, setError] = useState('');
 
-  const API_URL = (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL) || '';
+  const API_URL = getApiBase();
 
   const check = async () => {
     if (!/^\d{6}$/.test(pincode.trim())) {
