@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin-service';
-import { createShiprocketOrder } from '@/lib/shiprocket-helper';
+import { fulfillShipment } from '@/lib/shipping';
 
 const PHONEPE_CLIENT_ID = process.env.PHONEPE_CLIENT_ID!;
 const PHONEPE_CLIENT_SECRET = process.env.PHONEPE_CLIENT_SECRET!;
@@ -48,6 +48,130 @@ async function getUser(req: NextRequest) {
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
   if (error || !user) return null;
   return user;
+}
+
+function safeParse<T>(raw: any, fallback: T): T {
+  if (raw == null) return fallback;
+  if (typeof raw !== 'string') return raw as T;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Idempotently turn a PAID PhonePe transaction into a confirmed order.
+ *
+ * Callable from BOTH the server-side PhonePe callback and the client-side
+ * verify-polling path — whichever observes success first wins, the other
+ * no-ops. Idempotency is enforced by the unique `transaction_id`: if the order
+ * already exists (or a concurrent call races us to the insert) we return the
+ * existing order rather than creating a duplicate or decrementing stock twice.
+ *
+ * The caller must have already verified the payment is successful.
+ */
+async function finalizePaidOrder(
+  transactionId: string,
+): Promise<
+  | { ok: true; orderNumber: string; alreadyExisted: boolean }
+  | { ok: false; error: string }
+> {
+  // 1. Already fulfilled?
+  const { data: existing } = await supabaseAdmin
+    .from('orders')
+    .select('order_number')
+    .eq('transaction_id', transactionId)
+    .maybeSingle();
+  if (existing) return { ok: true, orderNumber: existing.order_number, alreadyExisted: true };
+
+  // 2. The pending order captured at initiate-time must exist.
+  const { data: pending } = await supabaseAdmin
+    .from('pending_orders')
+    .select('*')
+    .eq('transaction_id', transactionId)
+    .maybeSingle();
+  if (!pending) return { ok: false, error: 'Pending order not found' };
+
+  const cartItems = safeParse<any[]>(pending.cart_items, []);
+  const shippingAddr = safeParse<any>(pending.shipping_address, {});
+  const orderNumber = `DLX-${Date.now().toString(36).toUpperCase()}`;
+
+  // 3. Create the order. A unique index on transaction_id guards against
+  //    double-fulfilment from a callback/verify race.
+  const { data: order, error: orderErr } = await supabaseAdmin
+    .from('orders')
+    .insert({
+      user_id: pending.user_id,
+      order_number: orderNumber,
+      total_amount: pending.amount,
+      payment_method: 'phonepe',
+      payment_gateway: 'phonepe',
+      status: 'confirmed',
+      shipping_address: shippingAddr,
+      email: pending.email || 'customer@daluxeskincare.com',
+      transaction_id: transactionId,
+    })
+    .select()
+    .single();
+
+  if (orderErr || !order) {
+    // A concurrent fulfilment likely won the unique-transaction_id race.
+    const { data: raced } = await supabaseAdmin
+      .from('orders')
+      .select('order_number')
+      .eq('transaction_id', transactionId)
+      .maybeSingle();
+    if (raced) return { ok: true, orderNumber: raced.order_number, alreadyExisted: true };
+    console.error('[PhonePe] Order insert failed:', orderErr);
+    return { ok: false, error: orderErr?.message || 'Failed to create order' };
+  }
+
+  // 4. Order items + stock + cart/pending cleanup.
+  if (cartItems.length) {
+    const orderItems = cartItems.map((item: any) => ({
+      order_id: order.id,
+      product_id: item.product_id,
+      name: item.name || `Product ${item.product_id}`,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+    const { error: itemsErr } = await supabaseAdmin.from('order_items').insert(orderItems);
+    if (itemsErr) console.error('[PhonePe] Order items error:', itemsErr);
+
+    for (const item of cartItems) {
+      await supabaseAdmin.rpc('decrement_stock', {
+        p_product_id: item.product_id,
+        p_quantity: item.quantity,
+      });
+    }
+  }
+  if (pending.user_id) {
+    await supabaseAdmin.from('cart_items').delete().eq('user_id', pending.user_id);
+  }
+  await supabaseAdmin.from('pending_orders').delete().eq('transaction_id', transactionId);
+
+  // 5. Courier shipment (provider-agnostic, best-effort — never fails the order).
+  await fulfillShipment(order.id, {
+    orderId: order.id,
+    orderNumber,
+    email: pending.email || '',
+    phone: shippingAddr.phone || '',
+    shippingAddress: {
+      name: shippingAddr.name || '',
+      address_line1: shippingAddr.address_line1 || '',
+      address_line2: shippingAddr.address_line2 || '',
+      city: shippingAddr.city || '',
+      state: shippingAddr.state || '',
+      pincode: shippingAddr.pincode || '',
+      phone: shippingAddr.phone || '',
+    },
+    cartItems,
+    totalAmount: pending.amount,
+    paymentMethod: 'Prepaid',
+  });
+
+  return { ok: true, orderNumber, alreadyExisted: false };
 }
 
 const CORS_HEADERS = {
@@ -189,93 +313,10 @@ async function handleRequest(req: NextRequest) {
       const appUrl = storefrontUrl;
 
       if (isSuccessful) {
-        // Check if order already exists
-        const { data: existing } = await supabaseAdmin.from('orders').select('order_number').eq('transaction_id', orderId).single();
-        if (existing) {
-          return NextResponse.redirect(`${appUrl}/profile?status=success&orderId=${orderId}`);
+        const result = await finalizePaidOrder(orderId);
+        if (!result.ok) {
+          return NextResponse.redirect(`${appUrl}/profile?status=error&error=${encodeURIComponent(result.error)}`);
         }
-
-        // Fetch pending order data
-        const { data: pending, error: pendRel } = await supabaseAdmin.from('pending_orders').select('*').eq('transaction_id', orderId).single();
-        if (pendRel || !pending) {
-          return NextResponse.redirect(`${appUrl}/profile?status=error&error=Pending+order+not+found`);
-        }
-
-        const cartItems = JSON.parse(pending.cart_items);
-        const shippingAddr = pending.shipping_address ? JSON.parse(pending.shipping_address) : {};
-        const orderNumber = `DLX-${Date.now().toString(36).toUpperCase()}`;
-
-        const { data: order, error: orderErr } = await supabaseAdmin.from('orders').insert({
-          user_id: pending.user_id,
-          order_number: orderNumber,
-          total_amount: pending.amount,
-          payment_method: 'phonepe',
-          payment_gateway: 'phonepe',
-          status: 'confirmed',
-          shipping_address: shippingAddr,
-          email: pending.email || 'customer@daluxeskincare.com',
-          transaction_id: orderId,
-        }).select().single();
-
-        if (orderErr) throw orderErr;
-
-        // Insert Order Items
-        const orderItems = cartItems.map((item: any) => ({
-          order_id: order.id,
-          product_id: item.product_id,
-          name: item.name || `Product ${item.product_id}`,
-          quantity: item.quantity,
-          price: item.price,
-        }));
-        const { error: itemsErr } = await supabaseAdmin.from('order_items').insert(orderItems);
-        if (itemsErr) console.error('[Order Items Error]:', itemsErr);
-
-        // Stock and Cart Cleanup
-        for (const item of cartItems) {
-          await supabaseAdmin.rpc('decrement_stock', { p_product_id: item.product_id, p_quantity: item.quantity });
-        }
-        await supabaseAdmin.from('cart_items').delete().eq('user_id', pending.user_id);
-        await supabaseAdmin.from('pending_orders').delete().eq('transaction_id', orderId);
-
-        // ── Shiprocket: create order + auto-assign AWB ────────────────────
-        try {
-          const srResult = await createShiprocketOrder({
-            orderId:       order.id,
-            orderNumber,
-            email:         pending.email || '',
-            phone:         shippingAddr.phone || '',
-            shippingAddress: {
-              name:          shippingAddr.name || '',
-              address_line1: shippingAddr.address_line1 || '',
-              city:          shippingAddr.city || '',
-              state:         shippingAddr.state || '',
-              pincode:       shippingAddr.pincode || '',
-              phone:         shippingAddr.phone || '',
-            },
-            cartItems,
-            totalAmount:   pending.amount,
-            paymentMethod: 'Prepaid',
-          });
-
-          if (srResult) {
-            await supabaseAdmin.from('orders').update({
-              shipment_id:         srResult.shipment_id || null,
-              shiprocket_order_id: srResult.shiprocket_order_id || null,
-              awb_code:            srResult.awb_code || null,
-              shipment_status:     'synced'
-            }).eq('id', order.id);
-          } else {
-            await supabaseAdmin.from('orders').update({
-              shipment_status: 'failed_sync'
-            }).eq('id', order.id);
-          }
-        } catch (srErr: any) {
-          console.error('[Shiprocket PhonePe Error]:', srErr);
-          await supabaseAdmin.from('orders').update({
-            shipment_status: `error: ${srErr.message || 'unknown'}`
-          }).eq('id', order.id);
-        }
-
         return NextResponse.redirect(`${appUrl}/profile?status=success&orderId=${orderId}`);
       } else {
         console.warn('[PhonePe Callback] Payment not successful. State:', state);
@@ -311,12 +352,20 @@ async function handleRequest(req: NextRequest) {
       const state = statusData.state || statusData.orderState || statusData.data?.state || statusData.data?.orderState;
 
       if (state === 'COMPLETED') {
-        // Logic to create order would go here (similar to callback)
-        // For brevity in polling, we return success and let the callback handle the heavy lifting, 
-        // or implement the same order creation logic here with a concurrency lock.
-        return NextResponse.json({ success: true, state: 'COMPLETED' });
+        // Idempotently fulfil here too: covers the case where PhonePe's
+        // server-to-server callback never reached us (user closed the tab,
+        // callback errored, etc.) but the payment genuinely succeeded.
+        const result = await finalizePaidOrder(orderId);
+        if (!result.ok) {
+          return NextResponse.json({ success: false, state, error: result.error }, { status: 500 });
+        }
+        return NextResponse.json({
+          success: true,
+          state: 'COMPLETED',
+          order: { order_number: result.orderNumber },
+        });
       }
-      
+
       if (state === 'FAILED') return NextResponse.json({ success: false, state: 'FAILED', error: 'Payment failed' });
       
       return NextResponse.json({ success: false, state: state || 'UNKNOWN', error: 'Payment not completed' });

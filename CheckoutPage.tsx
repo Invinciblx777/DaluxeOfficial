@@ -79,15 +79,14 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
     setPincodeError('');
     try {
       const w = 0.5; // default weight 500g
-      const res = await fetch(`${API_URL}/api/checkout?action=shipping&pincode=${pincode}&weight=${w}&payment=${paymentMethod}`).then(r => r.json());
-      if (res.serviceable) {
-        setShipping(res.rate);
-      } else {
-        setShipping(99); // Fallback
-        setPincodeError('Pincode might be unserviceable via primary partners');
+      const res = await fetch(`${API_URL}/api/checkout?action=shipping&pincode=${pincode}&weight=${w}&payment=${paymentMethod}&subtotal=${subtotal}`).then(r => r.json());
+      // Rate is a flat fee (free above the threshold), independent of serviceability.
+      setShipping(typeof res.rate === 'number' ? res.rate : 0);
+      if (res.serviceable === false) {
+        setPincodeError('This pincode may be unserviceable by our courier partner');
       }
     } catch(e) {
-      setShipping(99); 
+      setShipping(0);
     }
   }
 

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin-service';
-import { ShiprocketService } from '@/lib/shiprocket';
-import { createShiprocketOrder, getShippingRate } from '@/lib/shiprocket-helper';
+import { getShippingQuote, fulfillShipment } from '@/lib/shipping';
 
 async function getUser(req: NextRequest) {
   const auth = req.headers.get('authorization');
@@ -38,41 +37,24 @@ async function handleRequest(req: NextRequest) {
   const action = searchParams.get('action');
 
   // ─── SHIPPING CALCULATOR ───
+  // Flat rate, free above a threshold (env-tunable); serviceability is checked
+  // against the active courier. Pricing is decoupled from the courier rate API.
   if (action === 'shipping') {
     const pincode = searchParams.get('pincode');
-    const weight = searchParams.get('weight') || '0.5';
-    const payment = searchParams.get('payment');
+    const payment = (searchParams.get('payment') as 'cod' | 'prepaid') || 'prepaid';
+    const subtotal = parseFloat(searchParams.get('subtotal') || '0') || 0;
 
     if (!pincode || pincode.length < 6) {
       return NextResponse.json({ success: false, error: 'Valid 6-digit pincode is required' }, { status: 400 });
     }
 
     try {
-      const PICKUP_POSTCODE = parseInt(process.env.SHIPROCKET_PICKUP_POSTCODE || '400017');
-      const codParam = payment === 'cod' ? 1 : 0;
-
-      const rateData: any = await ShiprocketService.checkServiceability({
-        pickup_postcode: PICKUP_POSTCODE,
-        delivery_postcode: parseInt(pincode),
-        weight: parseFloat(weight),
-        cod: codParam,
-      });
-
-      if (rateData.status === 200 && rateData.data && rateData.data.available_courier_companies?.length > 0) {
-        const sorted = rateData.data.available_courier_companies.sort((a: any, b: any) => a.rate - b.rate);
-        return NextResponse.json({ 
-          success: true, 
-          serviceable: true, 
-          rate: Math.ceil(sorted[0].rate), 
-          estimatedDays: sorted[0].etd 
-        });
-      } else {
-        return NextResponse.json({ success: true, serviceable: false, rate: 0 });
-      }
+      const quote = await getShippingQuote({ pincode, paymentMethod: payment, subtotal });
+      return NextResponse.json(quote);
     } catch (e: any) {
       console.error('[Shipping API Error]:', e);
-      // Fallback
-      return NextResponse.json({ success: true, serviceable: true, rate: 99, estimatedDays: '3-5' });
+      // Never block checkout — fall back to flat rate, serviceable.
+      return NextResponse.json({ success: true, serviceable: true, rate: 49, estimatedDays: '3-5' });
     }
   }
 
@@ -163,47 +145,26 @@ async function handleRequest(req: NextRequest) {
 
       await supabaseAdmin.from('cart_items').delete().eq('user_id', user.id);
 
-      // ── Shiprocket: create order + auto-assign AWB ──────────────────────────
-      try {
-        const addr = orderPayload.shipping_address || {};
-        const srResult = await createShiprocketOrder({
-          orderId: order.id,
-          orderNumber,
-          email: orderPayload.email || user.email || '',
+      // ── Courier: create shipment + auto-assign AWB (provider-agnostic) ──────
+      const addr = orderPayload.shipping_address || {};
+      await fulfillShipment(order.id, {
+        orderId: order.id,
+        orderNumber,
+        email: orderPayload.email || user.email || '',
+        phone: addr.phone || '',
+        shippingAddress: {
+          name: addr.name || '',
+          address_line1: addr.address_line1 || '',
+          address_line2: addr.address_line2 || '',
+          city: addr.city || '',
+          state: addr.state || '',
+          pincode: addr.pincode || '',
           phone: addr.phone || '',
-          shippingAddress: {
-            name: addr.name || '',
-            address_line1: addr.address_line1 || '',
-            city: addr.city || '',
-            state: addr.state || '',
-            pincode: addr.pincode || '',
-            phone: addr.phone || '',
-          },
-          cartItems,
-          totalAmount: orderPayload.total_amount,
-          paymentMethod: 'COD',
-        });
-
-        if (srResult) {
-          await supabaseAdmin.from('orders').update({
-            shipment_id:         srResult.shipment_id || null,
-            shiprocket_order_id: srResult.shiprocket_order_id || null,
-            awb_code:            srResult.awb_code || null,
-            shipment_status:     'synced'
-          }).eq('id', order.id);
-        } else {
-          // Log failure state if srResult is null (returned from helper on error)
-          await supabaseAdmin.from('orders').update({
-            shipment_status: 'failed_sync'
-          }).eq('id', order.id);
-        }
-      } catch (srErr: any) {
-        console.error('[Shiprocket COD Error]:', srErr);
-        // Save error to DB for admin visibility
-        await supabaseAdmin.from('orders').update({
-          shipment_status: `error: ${srErr.message || 'unknown'}`
-        }).eq('id', order.id);
-      }
+        },
+        cartItems,
+        totalAmount: orderPayload.total_amount,
+        paymentMethod: 'COD',
+      });
 
       return NextResponse.json({ success: true, order: { order_number: order.order_number } });
     } catch (e: any) {
