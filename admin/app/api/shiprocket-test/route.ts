@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { ShiprocketService } from '@/lib/shiprocket-helper';
+import { ShiprocketService } from '@/lib/shiprocket';
 
 export const dynamic = 'force-dynamic';
 
