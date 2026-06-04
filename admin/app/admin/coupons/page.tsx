@@ -6,8 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Ticket, Users, TrendingDown } from 'lucide-react';
-import { format } from 'date-fns';
 
+const dateFormatter = new Intl.DateTimeFormat('en-IN', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: true,
+});
 export default function CouponsPage() {
   const { orders, fetchOrders, isLoading } = useAdminStore();
 
@@ -116,7 +123,7 @@ export default function CouponsPage() {
                       <span className="text-green-600 font-medium">-₹{usage.discountAmount}</span>
                     </TableCell>
                     <TableCell className="text-right">
-                      {format(usage.date, 'dd MMM yyyy, hh:mm a')}
+                      {dateFormatter.format(usage.date)}
                     </TableCell>
                   </TableRow>
                 ))
