@@ -103,6 +103,11 @@ export class ShadowfaxService {
     return this.request<SfxResponse>('/v3/clients/orders/', 'POST', payload);
   }
 
+  /** Create a reverse pickup (customer return) request. */
+  static async createReversePickupOrder(payload: any): Promise<SfxResponse> {
+    return this.request<SfxResponse>('/v3/clients/requests', 'POST', payload);
+  }
+
   /** Full tracking timeline for an AWB. */
   static async trackByAWB(awb: string): Promise<SfxResponse> {
     return this.request<SfxResponse>(
