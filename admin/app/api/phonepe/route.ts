@@ -267,7 +267,7 @@ async function handleRequest(req: NextRequest) {
         paymentFlow: {
           type: 'PG_CHECKOUT',
           merchantUrls: {
-            redirectUrl: `${adminApiUrl}/api/phonepe?action=callback&orderId=${merchantOrderId}&storefront=${encodeURIComponent(appUrl)}`,
+            redirectUrl: `${appUrl}/api/phonepe?action=callback&orderId=${merchantOrderId}&storefront=${encodeURIComponent(appUrl)}`,
           },
         },
         metaInfo: { udf1: user.id, udf2: user.email || '' },
