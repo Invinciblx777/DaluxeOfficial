@@ -41,9 +41,7 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
   const [loading, setLoading] = useState(false);
   const [paymentDone, setPaymentDone] = useState(false);
 
-  const desktopBg = require('./assets/bgdesktopskinassesment.png');
-  const mobileBg = require('./assets/backgroundskinassesment-mobile.png');
-  const bgSource = windowWidth < 768 ? mobileBg : desktopBg;
+  // Removed glitched skin assessment background image from checkout
 
   // ... (rest of states)
   const [shipping, setShipping] = useState<number | 'CALCULATING'>(99);
@@ -226,7 +224,6 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
   if (paymentDone) {
     return (
       <View style={s.successContainer}>
-        <ImageBackground source={bgSource} style={StyleSheet.absoluteFill} resizeMode="cover" />
         <LinearGradient colors={[GOLD, GOLD_LIGHT]} style={s.successCircle}>
           <Check color="#fff" size={36} strokeWidth={3} />
         </LinearGradient>
@@ -250,7 +247,6 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
 
   return (
     <View style={s.root}>
-      <ImageBackground source={bgSource} style={StyleSheet.absoluteFill} resizeMode="cover" />
       
       {/* KeyboardAvoidingView fixes inputs being covered by soft keyboard */}
       <KeyboardAvoidingView
