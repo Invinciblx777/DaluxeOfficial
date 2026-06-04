@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin-service';
 import { getShippingQuote, fulfillShipment } from '@/lib/shipping';
 
+export const dynamic = 'force-dynamic';
+
 async function getUser(req: NextRequest) {
   const auth = req.headers.get('authorization');
   if (!auth || !auth.startsWith('Bearer ')) return null;
