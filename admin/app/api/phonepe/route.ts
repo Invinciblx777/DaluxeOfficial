@@ -107,6 +107,8 @@ async function finalizePaidOrder(
       user_id: pending.user_id,
       order_number: orderNumber,
       total_amount: pending.amount,
+      coupon_code: pending.coupon_code || null,
+      discount_amount: pending.discount_amount || 0,
       payment_method: 'phonepe',
       payment_gateway: 'phonepe',
       status: 'confirmed',
@@ -233,7 +235,7 @@ async function handleRequest(req: NextRequest) {
       if (!user) return NextResponse.json({ success: false, error: 'Unauthorized. Please log in.' }, { status: 401 });
 
       const body = await req.json();
-      const { amount, cart_items, shipping_address, email } = body;
+      const { amount, coupon_code, discount_amount, cart_items, shipping_address, email } = body;
       if (!amount || amount <= 0) return NextResponse.json({ success: false, error: 'Invalid payment amount' }, { status: 400 });
 
       const merchantOrderId = `DALUXE-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -246,6 +248,8 @@ async function handleRequest(req: NextRequest) {
           cart_items: JSON.stringify(cart_items),
           shipping_address: shipping_address ? JSON.stringify(shipping_address) : null,
           amount,
+          coupon_code: coupon_code || null,
+          discount_amount: discount_amount || 0,
           email: email || user.email,
           status: 'initiated',
           created_at: new Date().toISOString(),

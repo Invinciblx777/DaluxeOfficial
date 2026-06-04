@@ -82,6 +82,8 @@ export interface Order {
   pincode: string;
   items: OrderItem[];
   total: number;
+  couponCode?: string | null;
+  discountAmount?: number | null;
   status: OrderStatus;
   paymentId: string;
   shipmentStatus?: string;
@@ -243,6 +245,8 @@ export const useAdminStore = create<AdminStore>()(
                 };
               }),
               total: Number(o.total_amount),
+              couponCode: o.coupon_code || null,
+              discountAmount: Number(o.discount_amount) || null,
               status: o.status as any,
               paymentId: o.payment_id || o.transaction_id || '',
               shipmentStatus: o.shipment_status || '',

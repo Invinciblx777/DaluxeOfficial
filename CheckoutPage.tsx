@@ -48,6 +48,12 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
   const [paymentMethod, setPaymentMethod] = useState<'prepaid' | 'cod'>('prepaid');
   const [pincodeError, setPincodeError] = useState('');
   
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [couponMsg, setCouponMsg] = useState('');
+  const VALID_COUPONS = ['SUMPI20', 'RASHMI20', 'DIKSHA20', 'PINKY20'];
+  const COUPON_DISCOUNT = 20;
+  
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scrollRef = useRef<ScrollView>(null);
 
@@ -68,8 +74,21 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
   const subtotal = initialTotal !== undefined ? initialTotal : items.reduce((s, i) => s + i.price * i.quantity, 0);
   const getShippingAmount = () => (shipping === 'CALCULATING' ? 0 : shipping);
   const displayShipping = shipping === 'CALCULATING' ? '...' : (shipping === 0 ? 'FREE' : `₹${shipping}`);
-  const grandTotal = subtotal + getShippingAmount();
+  const discountAmount = appliedCoupon ? COUPON_DISCOUNT : 0;
+  const grandTotal = Math.max(0, subtotal + getShippingAmount() - discountAmount);
   const API_URL = getApiBase();
+
+  function handleApplyCoupon() {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    if (VALID_COUPONS.includes(code)) {
+      setAppliedCoupon(code);
+      setCouponMsg('Coupon applied successfully!');
+    } else {
+      setAppliedCoupon(null);
+      setCouponMsg('Invalid coupon code');
+    }
+  }
 
   async function checkShipping(pincode: string) {
     if (!pincode || pincode.length < 6) return;
@@ -116,6 +135,8 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
     const orderPayload = {
       total_amount: grandTotal,
       email: form.email,
+      coupon_code: appliedCoupon,
+      discount_amount: discountAmount,
       shipping_address: {
         name: form.name, phone: form.phone,
         address_line1: form.address, address_line2: '',
@@ -178,6 +199,8 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
           },
           body: JSON.stringify({
             amount: grandTotal,
+            coupon_code: appliedCoupon,
+            discount_amount: discountAmount,
             cart_items: items.map(i => ({ product_id: i.id, name: i.name, quantity: i.quantity, price: i.price })),
             shipping_address: {
               name: form.name, phone: form.phone,
@@ -334,9 +357,30 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
             <View style={s.priceBox}>
               <PriceLine label="Items Subtotal" value={`₹${subtotal.toLocaleString('en-IN')}`} />
               <PriceLine label="Shipping" value={displayShipping} green={shipping === 0} />
+              {appliedCoupon && (
+                <PriceLine label={`Discount (${appliedCoupon})`} value={`-₹${discountAmount}`} green />
+              )}
               <View style={s.divider} />
               <PriceLine label="Final Total" value={`₹${grandTotal.toLocaleString('en-IN')}`} bold />
             </View>
+
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
+              <TextInput 
+                style={[f.input, { flex: 1, textTransform: 'uppercase', marginBottom: 0 }]} 
+                placeholder="Discount code" 
+                value={couponInput}
+                onChangeText={setCouponInput}
+                autoCapitalize="characters"
+              />
+              <TouchableOpacity 
+                style={{ backgroundColor: couponInput.trim() ? '#1A1A1A' : '#E0E0E0', paddingHorizontal: 20, justifyContent: 'center', borderRadius: 8 }}
+                disabled={!couponInput.trim()}
+                onPress={handleApplyCoupon}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+            {couponMsg ? <Text style={{ color: appliedCoupon ? '#22C55E' : '#EF4444', marginBottom: 20, marginTop: -10, fontSize: 13, fontWeight: '500' }}>{couponMsg}</Text> : null}
 
             <View style={s.addrBox}>
               <MapPin color={GOLD} size={15} strokeWidth={1.8} />

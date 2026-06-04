@@ -40,6 +40,8 @@ export interface Order {
   user_id: string;
   status: OrderStatus;
   total_amount: number;
+  coupon_code?: string | null;
+  discount_amount?: number | null;
   shipping_address: {
     name: string;
     phone: string;

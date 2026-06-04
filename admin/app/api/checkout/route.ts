@@ -116,6 +116,8 @@ async function handleRequest(req: NextRequest) {
         user_id: user.id, 
         order_number: orderNumber, 
         total_amount: orderPayload.total_amount,
+        coupon_code: orderPayload.coupon_code || null,
+        discount_amount: orderPayload.discount_amount || 0,
         payment_method: 'cod', 
         payment_gateway: 'cod',
         status: 'confirmed', 

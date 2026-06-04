@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LayoutDashboard, ShoppingCart, Package, Users, BarChart3, Settings, Sparkles, LogOut } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Users, BarChart3, Settings, Sparkles, LogOut, Ticket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster, toast } from 'sonner';
 import { createClient } from '@supabase/supabase-js';
@@ -12,6 +12,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin-service';
 const navItems = [
   { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/admin/orders', icon: ShoppingCart, label: 'Orders' },
+  { href: '/admin/coupons', icon: Ticket, label: 'Coupons' },
   { href: '/admin/products', icon: Package, label: 'Products' },
   { href: '/admin/customers', icon: Users, label: 'Customers' },
   { href: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
