@@ -1810,16 +1810,18 @@ const ProductLandingPage = ({
               <Text style={d.heroPrice}>{product.priceDisplay}</Text>
             </View>
 
-            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', alignSelf: isMob ? 'center' : 'flex-start', width: '100%', maxWidth: 400 }}>
+            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', alignSelf: 'stretch', maxWidth: 400 }}>
               {/* minWidth:0 lets the cart button shrink so the fixed-width share button
                   can never be pushed past the screen edge on narrow phones */}
-              <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={{ flex: 1, minWidth: 0, paddingRight: 4 }}>
                 <GoldCartButton
                   onPress={(x, y) => onAddToCart(product, x, y)}
                   label="ADD TO CART"
                 />
               </View>
-              <ShareButton product={product} onCopied={triggerToast} />
+              <View style={{ paddingRight: 4 }}>
+                <ShareButton product={product} onCopied={triggerToast} />
+              </View>
             </View>
 
             <View style={d.trustBadges}>
