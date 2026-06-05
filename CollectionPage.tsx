@@ -500,8 +500,8 @@ export const COLLECTION_PRODUCTS = [
     subtitle: 'Complete Skin Repair & Glow Solution',
     category: 'combo',
     tagline: 'Cleanse, Repair & Glow with Gold Glow Ritual',
-    price: 897,
-    priceDisplay: '₹897.00',
+    price: 1097,
+    priceDisplay: '₹1,097.00',
     mrp: '₹1,147',
     size: 'COMBO PACK',
     sizeDetail: 'Facewash + Face Serum + Night Cream + FREE Facewash',
@@ -2173,6 +2173,10 @@ export const CartDrawer = ({
     if (code === 'DALUXE10') {
       const d = Math.round(total * 0.1);
       setDiscount(d);
+      setAppliedPromo(code);
+      setPromoError(null);
+    } else if (['SUMPI20', 'RASHMI20', 'DIKSHA20', 'PINKY20'].includes(code)) {
+      setDiscount(20);
       setAppliedPromo(code);
       setPromoError(null);
     } else {
