@@ -41,6 +41,8 @@ const statusConfig: Record<string, { color: string; label: string; bg: string; b
   delivered: { color: '#2D7A2D', label: 'DELIVERED',  bg: 'rgba(45,122,45,0.08)',  border: 'rgba(45,122,45,0.2)'  },
   shipped:   { color: '#1A65C0', label: 'SHIPPED',    bg: 'rgba(26,101,192,0.08)', border: 'rgba(26,101,192,0.2)' },
   pending:   { color: GOLD_DARK, label: 'PROCESSING', bg: 'rgba(201,162,39,0.1)',  border: BORDER },
+  confirmed: { color: GOLD_DARK, label: 'CONFIRMED',  bg: 'rgba(201,162,39,0.1)',  border: BORDER },
+  cancelled: { color: '#DC2626', label: 'CANCELLED',  bg: 'rgba(220,38,38,0.08)',  border: 'rgba(220,38,38,0.2)' },
 };
 
 function formatDate(iso: string) {
@@ -289,7 +291,7 @@ const OrderDetail = ({ order, onBack, onTrack, onRefresh }: any) => {
   const st = statusConfig[order.status] || statusConfig.pending;
   const timeline = [
     { label: 'Order Placed',    done: true,                                            date: formatDate(order.created_at) },
-    { label: 'Packed',          done: order.status !== 'pending',                      date: '' },
+    { label: order.status === 'cancelled' ? 'Cancelled' : 'Packed', done: order.status !== 'pending', date: '' },
     { label: 'Shipped',         done: ['shipped','delivered'].includes(order.status),  date: '' },
     { label: 'Out for Delivery',done: order.status === 'delivered',                    date: '' },
     { label: 'Delivered',       done: order.status === 'delivered',                    date: order.status === 'delivered' ? formatDate(order.expected_delivery) : '' },
