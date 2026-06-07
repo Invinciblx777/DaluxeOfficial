@@ -12,6 +12,7 @@ const TEXT = '#1A1A1A';
 export default function ProfilePage({ userEmail, onLogout, onBack }: { userEmail: string, onLogout: () => void, onBack: () => void }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -53,6 +54,41 @@ export default function ProfilePage({ userEmail, onLogout, onBack }: { userEmail
       console.error('Error fetching orders:', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (Platform.OS === 'web') {
+      if (!window.confirm('Are you sure you want to cancel this order?')) return;
+    }
+    
+    setCancellingId(orderId);
+    try {
+      const { supabaseClient } = require('./lib/supabaseClient');
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const token = session?.access_token || '';
+
+      const API_URL = getApiBase();
+      const res = await fetch(`${API_URL}/api/orders/user/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ orderId })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        if (Platform.OS === 'web') alert('Order cancelled successfully.');
+        fetchOrders();
+      } else {
+        if (Platform.OS === 'web') alert(data.error || 'Failed to cancel order');
+      }
+    } catch(e) {
+      if (Platform.OS === 'web') alert('Network error while cancelling order');
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -162,6 +198,23 @@ export default function ProfilePage({ userEmail, onLogout, onBack }: { userEmail
                   </View>
                 )}
               </View>
+
+              {/* Cancel Button */}
+              {['pending', 'confirmed'].includes(order.status) && (
+                <View style={{ marginTop: 16, borderTopWidth: 1, borderColor: 'rgba(0,0,0,0.05)', paddingTop: 16, alignItems: 'flex-end' }}>
+                  <TouchableOpacity 
+                    style={{ paddingVertical: 8, paddingHorizontal: 16, borderRadius: 6, backgroundColor: '#FFF0F0', borderWidth: 1, borderColor: '#FFD6D6' }}
+                    onPress={() => handleCancelOrder(order.id)}
+                    disabled={cancellingId === order.id}
+                  >
+                    {cancellingId === order.id ? (
+                      <ActivityIndicator size="small" color="#E53935" />
+                    ) : (
+                      <Text style={{ color: '#E53935', fontSize: 13, fontWeight: '600' }}>Cancel Order</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           ))
         )}
