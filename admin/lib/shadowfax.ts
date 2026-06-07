@@ -33,7 +33,7 @@ export interface SfxResponse<T = any> {
 
 export class ShadowfaxService {
   private static get token(): string {
-    return sanitize(process.env.SHADOWFAX_TOKEN);
+    return sanitize(process.env.SHADOWFAX_TOKEN) || '3a13ef2f534911229dc501ba4cec7e8a8eb95736';
   }
 
   static isConfigured(): boolean {
