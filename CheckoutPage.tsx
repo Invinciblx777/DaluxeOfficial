@@ -73,9 +73,9 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
 
   const subtotal = initialTotal !== undefined ? initialTotal : items.reduce((s, i) => s + i.price * i.quantity, 0);
   const getShippingAmount = () => (shipping === 'CALCULATING' ? 0 : shipping);
-  const displayShipping = shipping === 'CALCULATING' ? '...' : (shipping === 0 ? 'FREE' : `₹${shipping}`);
   const discountAmount = appliedCoupon ? COUPON_DISCOUNT : 0;
-  const grandTotal = Math.max(0, subtotal + getShippingAmount() - discountAmount);
+  const codFee = paymentMethod === 'cod' ? 49 : 0;
+  const grandTotal = Math.max(0, subtotal + getShippingAmount() + codFee - discountAmount);
   const API_URL = getApiBase();
 
   function handleApplyCoupon() {
@@ -90,13 +90,13 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
     }
   }
 
-  async function checkShipping(pincode: string) {
+  async function checkShipping(pincode: string, pMethod = paymentMethod) {
     if (!pincode || pincode.length < 6) return;
     setShipping('CALCULATING');
     setPincodeError('');
     try {
       const w = 0.5; // default weight 500g
-      const res = await fetch(`${API_URL}/api/checkout?action=shipping&pincode=${pincode}&weight=${w}&payment=${paymentMethod}&subtotal=${subtotal}`).then(r => r.json());
+      const res = await fetch(`${API_URL}/api/checkout?action=shipping&pincode=${pincode}&weight=${w}&payment=${pMethod}&subtotal=${subtotal}`).then(r => r.json());
       // Rate is a flat fee (free above the threshold), independent of serviceability.
       setShipping(typeof res.rate === 'number' ? res.rate : 0);
       if (res.serviceable === false) {
@@ -356,7 +356,10 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
 
             <View style={s.priceBox}>
               <PriceLine label="Items Subtotal" value={`₹${subtotal.toLocaleString('en-IN')}`} />
-              <PriceLine label="Shipping" value={displayShipping} green={shipping === 0} />
+              <PriceLine label="Shipping" value={shipping === 'CALCULATING' ? '...' : (shipping === 0 ? 'FREE' : `₹${shipping}`)} green={shipping === 0} />
+              {paymentMethod === 'cod' && (
+                <PriceLine label="Cash on Delivery Fee" value="₹49" />
+              )}
               {appliedCoupon && (
                 <PriceLine label={`Discount (${appliedCoupon})`} value={`-₹${discountAmount}`} green />
               )}
@@ -411,11 +414,11 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
 
             <SectionHead icon={ShoppingBag} label="Payment Method" />
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
-              <TouchableOpacity onPress={() => { setPaymentMethod('prepaid'); checkShipping(form.pincode); }} style={[s.paymentToggle, paymentMethod === 'prepaid' && s.paymentToggleActive]} activeOpacity={0.8}>
+              <TouchableOpacity onPress={() => { setPaymentMethod('prepaid'); checkShipping(form.pincode, 'prepaid'); }} style={[s.paymentToggle, paymentMethod === 'prepaid' && s.paymentToggleActive]} activeOpacity={0.8}>
                 {paymentMethod === 'prepaid' && <View style={s.paymentToggleDot} />}
                 <Text style={[s.paymentToggleText, paymentMethod === 'prepaid' && s.paymentToggleTextActive]}>PhonePe / UPI / Cards</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => { setPaymentMethod('cod'); checkShipping(form.pincode); }} style={[s.paymentToggle, paymentMethod === 'cod' && s.paymentToggleActive]} activeOpacity={0.8}>
+              <TouchableOpacity onPress={() => { setPaymentMethod('cod'); checkShipping(form.pincode, 'cod'); }} style={[s.paymentToggle, paymentMethod === 'cod' && s.paymentToggleActive]} activeOpacity={0.8}>
                 {paymentMethod === 'cod' && <View style={s.paymentToggleDot} />}
                 <Text style={[s.paymentToggleText, paymentMethod === 'cod' && s.paymentToggleTextActive]}>Cash on Delivery</Text>
               </TouchableOpacity>
