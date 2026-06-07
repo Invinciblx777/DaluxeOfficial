@@ -284,7 +284,8 @@ const pf = StyleSheet.create({
 });
 
 // ─── ORDER DETAIL ─────────────────────────────────────────────────────────────
-const OrderDetail = ({ order, onBack, onTrack }: any) => {
+const OrderDetail = ({ order, onBack, onTrack, onRefresh }: any) => {
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const st = statusConfig[order.status] || statusConfig.pending;
   const timeline = [
     { label: 'Order Placed',    done: true,                                            date: formatDate(order.created_at) },
@@ -293,6 +294,40 @@ const OrderDetail = ({ order, onBack, onTrack }: any) => {
     { label: 'Out for Delivery',done: order.status === 'delivered',                    date: '' },
     { label: 'Delivered',       done: order.status === 'delivered',                    date: order.status === 'delivered' ? formatDate(order.expected_delivery) : '' },
   ];
+
+  const handleCancelOrder = async () => {
+    if (Platform.OS === 'web') {
+      if (!window.confirm('Are you sure you want to cancel this order?')) return;
+    }
+    
+    setCancellingId(order.id);
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const token = session?.access_token || '';
+
+      const res = await fetch(`/api/orders/user/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ orderId: order.id })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        if (Platform.OS === 'web') alert('Order cancelled successfully.');
+        if (onRefresh) onRefresh();
+        onBack();
+      } else {
+        if (Platform.OS === 'web') alert(data.error || 'Failed to cancel order');
+      }
+    } catch(e) {
+      if (Platform.OS === 'web') alert('Network error while cancelling order');
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24, paddingBottom: 60 }}>
@@ -367,6 +402,23 @@ const OrderDetail = ({ order, onBack, onTrack }: any) => {
           </View>
         ))}
       </Card>
+
+      {/* Cancel Button */}
+      {['pending', 'confirmed'].includes(order.status) && (
+        <View style={{ marginTop: 8, alignItems: 'center' }}>
+          <TouchableOpacity 
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 30, backgroundColor: '#FFF0F0', borderWidth: 1, borderColor: '#FFD6D6' }}
+            onPress={handleCancelOrder}
+            disabled={cancellingId === order.id}
+          >
+            {cancellingId === order.id ? (
+              <ActivityIndicator size="small" color="#E53935" />
+            ) : (
+              <Text style={{ color: '#E53935', fontSize: 13, fontWeight: '700', letterSpacing: 0.8 }}>CANCEL ORDER</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
     </ScrollView>
   );
 };
@@ -386,8 +438,7 @@ const OrdersSection = ({ userEmail, onTrackOrder }: { userEmail: string; onTrack
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<any>(null);
 
-  useEffect(() => {
-    (async () => {
+  const fetchOrders = async () => {
       setLoading(true);
       try {
         const { data: { session } } = await supabaseClient.auth.getSession();
@@ -427,10 +478,13 @@ const OrdersSection = ({ userEmail, onTrackOrder }: { userEmail: string; onTrack
         setOrders(transformed);
       } catch (e) { console.error('[Orders] Fetch error:', e); setOrders([]); }
       finally { setLoading(false); }
-    })();
+  };
+
+  useEffect(() => {
+    fetchOrders();
   }, [userEmail]);
 
-  if (selected) return <OrderDetail order={selected} onBack={() => setSelected(null)} onTrack={() => onTrackOrder(selected.tracking_id || selected.id)} />;
+  if (selected) return <OrderDetail order={selected} onBack={() => setSelected(null)} onTrack={() => onTrackOrder(selected.tracking_id || selected.id)} onRefresh={fetchOrders} />;
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24, paddingBottom: 60 }}>
