@@ -62,7 +62,7 @@ export default function WhatsAppChat() {
   }, [messages, mode]);
 
   const show = () => {
-    setMode('whatsapp');
+    setMode('selection');
     setOpen(true);
     RNAnimated.parallel([
       RNAnimated.spring(scaleAnim, { toValue: 1, tension: 65, friction: 8, useNativeDriver: true }),
@@ -76,7 +76,7 @@ export default function WhatsAppChat() {
       RNAnimated.timing(fadeAnim, { toValue: 0, duration: 130, useNativeDriver: true }),
     ]).start(() => {
       setOpen(false);
-      setMode('whatsapp');
+      setMode('selection');
     });
   };
 
@@ -90,27 +90,13 @@ export default function WhatsAppChat() {
     setLoading(true);
 
     try {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      const token = session?.access_token || '';
-
-      const apiMessages = messages
-        .filter(m => m.from === 'user' || m.from === 'bot')
-        .slice(-10)
-        .map(m => ({ role: m.from === 'user' ? 'user' : 'assistant', content: m.text }))
-        .concat([{ role: 'user', content: userMsg }]);
-
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ messages: apiMessages }),
-      });
-
-      const data = await res.json();
-      if (data.success && data.message?.content) {
-        setMessages(m => [...m, { from: 'bot', text: data.message.content }]);
-      } else {
-        setMessages(m => [...m, { from: 'bot', text: data.error || 'Sorry, I could not process your request right now. Please try again.' }]);
-      }
+      // Fake a slight delay to simulate typing
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setMessages(m => [...m, { 
+        from: 'bot', 
+        text: 'Our AI assistant is currently undergoing upgrades! \n\nFor immediate assistance, please tap the back arrow above and choose "WhatsApp Support" to chat with our human team.' 
+      }]);
     } catch (e: any) {
       setMessages(m => [...m, { from: 'bot', text: 'Connection error. Please check your internet and try again.' }]);
     } finally {
@@ -174,8 +160,8 @@ export default function WhatsAppChat() {
           {mode === 'whatsapp' && (
             <View style={{ flex: 1 }}>
               <View style={[styles.header, { backgroundColor: '#075E54' }]}>
-                <TouchableOpacity onPress={hide} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                  <X size={22} color="#FFF" />
+                <TouchableOpacity onPress={() => setMode('selection')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <ChevronLeft size={22} color="#FFF" />
                 </TouchableOpacity>
                 <Image source={{ uri: WA_ICON_URI }} style={styles.headerIconWA} />
                 <View style={{ flex: 1 }}>
