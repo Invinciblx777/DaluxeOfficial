@@ -62,7 +62,7 @@ export default function WhatsAppChat() {
   }, [messages, mode]);
 
   const show = () => {
-    setMode('selection');
+    setMode('whatsapp');
     setOpen(true);
     RNAnimated.parallel([
       RNAnimated.spring(scaleAnim, { toValue: 1, tension: 65, friction: 8, useNativeDriver: true }),
@@ -76,7 +76,7 @@ export default function WhatsAppChat() {
       RNAnimated.timing(fadeAnim, { toValue: 0, duration: 130, useNativeDriver: true }),
     ]).start(() => {
       setOpen(false);
-      setMode('selection');
+      setMode('whatsapp');
     });
   };
 
@@ -174,8 +174,8 @@ export default function WhatsAppChat() {
           {mode === 'whatsapp' && (
             <View style={{ flex: 1 }}>
               <View style={[styles.header, { backgroundColor: '#075E54' }]}>
-                <TouchableOpacity onPress={() => setMode('selection')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                  <ChevronLeft size={22} color="#FFF" />
+                <TouchableOpacity onPress={hide} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <X size={22} color="#FFF" />
                 </TouchableOpacity>
                 <Image source={{ uri: WA_ICON_URI }} style={styles.headerIconWA} />
                 <View style={{ flex: 1 }}>
