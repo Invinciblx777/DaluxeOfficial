@@ -162,7 +162,6 @@ export default function LegalPageShell({
 
       {/* ═══ FOOTER ═══ */}
       <Footer onNavigate={onNavigate} />
-      <View style={{ height: 60 }} />
     </Animated.ScrollView>
   );
 }

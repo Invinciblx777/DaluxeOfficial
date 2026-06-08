@@ -263,7 +263,6 @@ export default function OurStoryPage({ externalScrollY, onNavigate }: { external
 
       {/* ═══ FOOTER ═══ */}
       <Footer onNavigate={onNavigate} />
-      <View style={{ height: 60 }} />
     </Animated.ScrollView>
   );
 }

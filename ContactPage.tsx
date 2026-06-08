@@ -218,7 +218,6 @@ export default function ContactPage({ externalScrollY, onNavigate }: { externalS
 
       {/* ═══ FOOTER ═══ */}
       <Footer onNavigate={onNavigate} />
-      <View style={{ height: 60 }} />
     </Animated.ScrollView>
   );
 }

@@ -482,7 +482,6 @@ const ResultsPage = ({ name, onEmailReport, onNavigate }: any) => {
         </Animated.View>
       </View>
       <Footer onNavigate={onNavigate} />
-      <View style={{ height: 100 }} />
     </ScrollView>
   );
 };
