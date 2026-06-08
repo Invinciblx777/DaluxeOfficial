@@ -22,7 +22,7 @@ export interface CheckoutItem {
 
 interface CheckoutPageProps {
   items: CheckoutItem[];
-  initialTotal?: number;
+  initialCoupon?: string | null;
   userEmail: string | null;
   onBack: () => void;
   onLoginRequired: () => void;
@@ -35,7 +35,7 @@ const TEXT = '#1A1A1A';
 
 type Step = 'details' | 'review' | 'payment';
 
-export default function CheckoutPage({ items, initialTotal, userEmail, onBack, onLoginRequired, onSuccess }: CheckoutPageProps) {
+export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, onLoginRequired, onSuccess }: CheckoutPageProps) {
   const { width: windowWidth } = useWindowDimensions();
   const [step, setStep] = useState<Step>('details');
   const [loading, setLoading] = useState(false);
@@ -49,10 +49,9 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
   const [pincodeError, setPincodeError] = useState('');
   
   const [couponInput, setCouponInput] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(initialCoupon || null);
   const [couponMsg, setCouponMsg] = useState('');
   const VALID_COUPONS = ['SUMPI20', 'RASHMI20', 'DIKSHA20', 'PINKY20'];
-  const COUPON_DISCOUNT = 20;
   
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scrollRef = useRef<ScrollView>(null);
@@ -71,9 +70,16 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const subtotal = initialTotal !== undefined ? initialTotal : items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const getShippingAmount = () => (shipping === 'CALCULATING' ? 0 : shipping);
-  const discountAmount = appliedCoupon ? COUPON_DISCOUNT : 0;
+  
+  let discountAmount = 0;
+  if (appliedCoupon === 'DALUXE10') {
+    discountAmount = Math.round(subtotal * 0.1);
+  } else if (appliedCoupon && VALID_COUPONS.includes(appliedCoupon)) {
+    discountAmount = 20;
+  }
+
   const codFee = paymentMethod === 'cod' ? 49 : 0;
   const grandTotal = Math.max(0, subtotal + getShippingAmount() + codFee - discountAmount);
   const API_URL = getApiBase();
@@ -81,12 +87,17 @@ export default function CheckoutPage({ items, initialTotal, userEmail, onBack, o
   function handleApplyCoupon() {
     const code = couponInput.trim().toUpperCase();
     if (!code) return;
-    if (VALID_COUPONS.includes(code)) {
+    if (code === 'DALUXE10') {
       setAppliedCoupon(code);
+      setCouponInput('');
+      setCouponMsg('Coupon applied successfully!');
+    } else if (VALID_COUPONS.includes(code)) {
+      setAppliedCoupon(code);
+      setCouponInput('');
       setCouponMsg('Coupon applied successfully!');
     } else {
       setAppliedCoupon(null);
-      setCouponMsg('Invalid coupon code');
+      setCouponMsg('Invalid promo code');
     }
   }
 

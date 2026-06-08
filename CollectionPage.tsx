@@ -2120,7 +2120,7 @@ export const CartDrawer = ({
 }: {
   items: CartItem[]; visible: boolean; onClose: () => void;
   onUpdateQuantity: (id: string, qty: number) => void; onRemove: (id: string) => void;
-  onCheckout?: (items: CartItem[], total: number) => void;
+  onCheckout?: (items: CartItem[], total: number, appliedCoupon: string | null) => void;
 }) => {
   const [promoInput, setPromoInput] = React.useState('');
   const [appliedPromo, setAppliedPromo] = React.useState<string | null>(null);
@@ -2300,7 +2300,7 @@ export const CartDrawer = ({
               <Text style={cart.totalValue}>₹{discountedTotal.toLocaleString('en-IN')}</Text>
             </View>
             <Text style={cart.taxNote}>Inclusive of all taxes · Free shipping on orders ₹999+</Text>
-            <TouchableOpacity style={cart.checkoutBtn} activeOpacity={0.85} onPress={() => { onClose(); onCheckout?.(items, discountedTotal); }}>
+            <TouchableOpacity style={cart.checkoutBtn} activeOpacity={0.85} onPress={() => { onClose(); onCheckout?.(items, discountedTotal, appliedPromo); }}>
               <LinearGradient colors={['#C9A227', '#E9C349', '#C9A227']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={cart.checkoutGradient}>
                 <Text style={cart.checkoutText}>PROCEED TO CHECKOUT</Text>
               </LinearGradient>

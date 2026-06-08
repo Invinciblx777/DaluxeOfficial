@@ -908,7 +908,7 @@ export default function App() {
   const [cartVisible, setCartVisible] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | undefined>(undefined);
   const [selectedConcern, setSelectedConcern] = useState<string | null>(null);
-  const [checkoutTotal, setCheckoutTotal] = useState(0);
+  const [checkoutCoupon, setCheckoutCoupon] = useState<string | null>(null);
   // Remember where the user was on the home page before navigating away (desktop)
   const savedHomeScrollY = React.useRef<number>(0);
 
@@ -1679,7 +1679,7 @@ export default function App() {
               priceDisplay: i.product.priceDisplay,
               sizeDetail: i.product.sizeDetail,
             }))}
-            initialTotal={checkoutTotal}
+            initialCoupon={checkoutCoupon}
             userEmail={userEmail}
             onBack={() => { setCurrentPage('product'); setCartVisible(false); }}
             onLoginRequired={() => {
@@ -1905,9 +1905,9 @@ export default function App() {
         onClose={() => setCartVisible(false)}
         onUpdateQuantity={updateQuantity}
         onRemove={removeFromCart}
-        onCheckout={(items, total) => {
+        onCheckout={(items, total, coupon) => {
           setCartItems(items);
-          setCheckoutTotal(total);
+          setCheckoutCoupon(coupon || null);
           setCartVisible(false);
           setCurrentPage('checkout');
         }}
