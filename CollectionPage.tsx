@@ -1116,8 +1116,6 @@ const CollectionGrid = ({
 
       {/* Footer */}
       <Footer onNavigate={onNavigate} />
-
-      <View style={{ height: 60 }} />
     </>
   );
 };
@@ -2066,8 +2064,6 @@ const ProductLandingPage = ({
 
       {/* Main Footer */}
       <Footer onNavigate={onNavigate} />
-
-      <View style={{ height: 90 }} />
 
       {showShareToast && (
         <Animated.View style={[d.toastContainer, toastStyle]} pointerEvents="none">

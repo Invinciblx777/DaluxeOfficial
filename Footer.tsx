@@ -82,12 +82,6 @@ export const Footer = ({ onNavigate }: { onNavigate?: (page: string) => void }) 
         </Text>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, letterSpacing: 0.5 }}>Designed and powered by</Text>
-          <Image
-            source={require('./assets/elevexsocialslogo.png')}
-            style={{ width: 100, height: 26, opacity: 0.8 }}
-            resizeMode="contain"
-          />
         </View>
       </View>
     </ImageBackground>
