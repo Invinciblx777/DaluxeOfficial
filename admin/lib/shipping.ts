@@ -67,7 +67,10 @@ export async function getShippingQuote(params: {
 }): Promise<ShippingQuote> {
   const subtotal = Number(params.subtotal) || 0;
   const serviceable = await checkServiceable(params.pincode);
-  const rate = subtotal >= FREE_THRESHOLD() ? 0 : FLAT_RATE();
+  
+  // All shipping is technically free, we only charge a COD fee which is handled on the frontend and checkout API
+  const rate = 0;
+
   return { success: true, serviceable, rate, estimatedDays: ETD() };
 }
 
