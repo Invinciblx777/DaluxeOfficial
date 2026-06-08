@@ -1518,6 +1518,10 @@ const ProductImageCarousel = ({ product, isMob }: { product: ProductType; isMob:
 };
 
 const normalizeDynamicProduct = (dynamicP: any, staticP?: any) => {
+  // Override price for skin-combo to fix database sync issues
+  const isSkinCombo = dynamicP.id === 'skin-combo' || staticP?.id === 'skin-combo' || dynamicP.slug === 'skin-combo';
+  let rawPrice = isSkinCombo ? 1097 : (Number(dynamicP.price) || staticP?.price || 0);
+
   // Normalize category: map admin categories to storefront categories
   let category = dynamicP.category || staticP?.category || 'cleanse';
   const catLower = category.toLowerCase();
@@ -1619,8 +1623,8 @@ const normalizeDynamicProduct = (dynamicP: any, staticP?: any) => {
     subtitle,
     category,
     tagline: dynamicP.tagline || staticP?.tagline || '',
-    price: Number(dynamicP.price) || staticP?.price || 0,
-    priceDisplay: `₹${Number(dynamicP.price) || staticP?.price}.00`,
+    price: rawPrice,
+    priceDisplay: `₹${rawPrice}.00`,
     size: staticP?.size || '30 ML',
     sizeDetail: staticP?.sizeDetail || '30 ml (1.0 fl oz)',
     rating: staticP?.rating || 4.8,
