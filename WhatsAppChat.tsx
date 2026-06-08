@@ -90,13 +90,29 @@ export default function WhatsAppChat() {
     setLoading(true);
 
     try {
-      // Fake a slight delay to simulate typing
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      setLoading(true);
+      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate typing
       
-      setMessages(m => [...m, { 
-        from: 'bot', 
-        text: 'Our AI assistant is currently undergoing upgrades! \n\nFor immediate assistance, please tap the back arrow above and choose "WhatsApp Support" to chat with our human team.' 
-      }]);
+      const lower = userMsg.toLowerCase();
+      let botReply = "I'm still learning! Could you please try asking in a different way? Or tap the back arrow above to chat with our human support team on WhatsApp.";
+      
+      if (lower.includes('price') || lower.includes('cost') || lower.includes('how much')) {
+        botReply = "Our Virgin 5.0 Hair Serum is ₹997, and the Skincare Combo is ₹1,097! Both include free shipping on prepaid orders. ✨";
+      } else if (lower.includes('shipping') || lower.includes('delivery') || lower.includes('cod')) {
+        botReply = "We offer FREE shipping on all prepaid orders! Delivery takes 3-5 business days across India. Cash on Delivery is also available for a flat ₹49 fee. 🚚";
+      } else if (lower.includes('return') || lower.includes('refund') || lower.includes('cancel')) {
+        botReply = "We offer a 7-day return policy for unopened items. You can also easily cancel unshipped orders directly from your Account Dashboard!";
+      } else if (lower.includes('ingredient') || lower.includes('natural') || lower.includes('chemical') || lower.includes('vegan')) {
+        botReply = "Our products are formulated with Dermal-Grade Botanical ingredients! 🌱 They are 100% vegan, cruelty-free, ISO & GMP Certified, and contain ZERO silicones or harsh chemicals.";
+      } else if (lower.includes('human') || lower.includes('talk') || lower.includes('whatsapp') || lower.includes('agent')) {
+        botReply = "You can reach our human support team instantly by tapping the back arrow above and selecting 'WhatsApp Support'!";
+      } else if (lower.includes('hi') || lower.includes('hello') || lower.includes('hey')) {
+        botReply = "Hello gorgeous! ✨ How can I help you achieve your dream skin and hair today?";
+      } else if (lower.includes('track') || lower.includes('status')) {
+        botReply = "You can track your order directly from the Account Dashboard. Once shipped, you will also receive tracking details via email and SMS! 📦";
+      }
+
+      setMessages(m => [...m, { from: 'bot', text: botReply }]);
     } catch (e: any) {
       setMessages(m => [...m, { from: 'bot', text: 'Connection error. Please check your internet and try again.' }]);
     } finally {
