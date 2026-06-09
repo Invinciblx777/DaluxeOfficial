@@ -88,39 +88,34 @@ export default function WhatsAppChat() {
     setMessages(m => [...m, { from: 'user', text: userMsg }]);
     setInput('');
     
-    try {
-      setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate typing
-      
-      const lower = userMsg.toLowerCase();
-      let botReply = "I'm still learning! Could you please try asking in a different way? Or tap the back arrow above to chat with our human support team on WhatsApp.";
-      
-      const checkWords = (words: string[]) => words.some(w => new RegExp(`\\b${w}\\b`, 'i').test(lower));
-
-      if (checkWords(['price', 'cost', 'how much'])) {
-        botReply = "Our Virgin 5.0 Hair Serum is ₹997, and the Skincare Combo is ₹1,097! Both include free shipping on prepaid orders. ✨";
-      } else if (checkWords(['shipping', 'delivery', 'cod', 'deliver'])) {
-        botReply = "We offer FREE shipping on all prepaid orders! Delivery takes 3-5 business days across India. Cash on Delivery is also available for a flat ₹49 fee. 🚚";
-      } else if (checkWords(['return', 'refund', 'cancel'])) {
-        botReply = "We offer a 7-day return policy for unopened items. You can also easily cancel unshipped orders directly from your Account Dashboard!";
-      } else if (checkWords(['ingredient', 'ingredients', 'natural', 'chemical', 'chemicals', 'vegan'])) {
-        botReply = "Our products are formulated with Dermal-Grade Botanical ingredients! 🌱 They are 100% vegan, cruelty-free, ISO & GMP Certified, and contain ZERO silicones or harsh chemicals.";
-      } else if (checkWords(['human', 'talk', 'whatsapp', 'agent', 'person', 'support'])) {
-        botReply = "You can reach our human support team instantly by tapping the back arrow above and selecting 'WhatsApp Support'!";
-      } else if (checkWords(['hi', 'hello', 'hey', 'hii', 'hiii'])) {
-        botReply = "Hello gorgeous! ✨ How can I help you achieve your dream skin and hair today?";
-      } else if (checkWords(['track', 'status', 'order'])) {
-        botReply = "You can track your order directly from the Account Dashboard. Once shipped, you will also receive tracking details via email and SMS! 📦";
-      } else if (checkWords(['serum', 'serums', 'best', 'recommend', 'hair serum', 'face serum'])) {
-        botReply = "Both our Hair Serum and Face Serum are absolute bestsellers! Our Virgin 5.0 Hair Serum provides weightless shine and zero silicone feel, while our Glow & Correct Face Serum delivers a daily dose of gentle brightening. ✨";
+      try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const token = session?.access_token || '';
+  
+        const apiMessages = messages
+          .filter(m => m.from === 'user' || m.from === 'bot')
+          .slice(-10)
+          .map(m => ({ role: m.from === 'user' ? 'user' : 'assistant', content: m.text }))
+          .concat([{ role: 'user', content: userMsg }]);
+  
+        // Using relative path so it natively routes to the Vercel Next.js backend
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ messages: apiMessages }),
+        });
+  
+        const data = await res.json();
+        if (data.success && data.message?.content) {
+          setMessages(m => [...m, { from: 'bot', text: data.message.content }]);
+        } else {
+          setMessages(m => [...m, { from: 'bot', text: data.error || 'Sorry, I could not process your request right now. Please try again.' }]);
+        }
+      } catch (e: any) {
+        setMessages(m => [...m, { from: 'bot', text: 'Connection error. Please check your internet and try again.' }]);
+      } finally {
+        setLoading(false);
       }
-
-      setMessages(m => [...m, { from: 'bot', text: botReply }]);
-    } catch (e: any) {
-      setMessages(m => [...m, { from: 'bot', text: 'Connection error. Please check your internet and try again.' }]);
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
