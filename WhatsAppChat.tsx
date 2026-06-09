@@ -87,8 +87,7 @@ export default function WhatsAppChat() {
     const userMsg = input.trim();
     setMessages(m => [...m, { from: 'user', text: userMsg }]);
     setInput('');
-    setLoading(true);
-
+    
     try {
       setLoading(true);
       await new Promise(resolve => setTimeout(resolve, 800)); // Simulate typing
@@ -96,20 +95,24 @@ export default function WhatsAppChat() {
       const lower = userMsg.toLowerCase();
       let botReply = "I'm still learning! Could you please try asking in a different way? Or tap the back arrow above to chat with our human support team on WhatsApp.";
       
-      if (lower.includes('price') || lower.includes('cost') || lower.includes('how much')) {
+      const checkWords = (words: string[]) => words.some(w => new RegExp(`\\b${w}\\b`, 'i').test(lower));
+
+      if (checkWords(['price', 'cost', 'how much'])) {
         botReply = "Our Virgin 5.0 Hair Serum is ₹997, and the Skincare Combo is ₹1,097! Both include free shipping on prepaid orders. ✨";
-      } else if (lower.includes('shipping') || lower.includes('delivery') || lower.includes('cod')) {
+      } else if (checkWords(['shipping', 'delivery', 'cod', 'deliver'])) {
         botReply = "We offer FREE shipping on all prepaid orders! Delivery takes 3-5 business days across India. Cash on Delivery is also available for a flat ₹49 fee. 🚚";
-      } else if (lower.includes('return') || lower.includes('refund') || lower.includes('cancel')) {
+      } else if (checkWords(['return', 'refund', 'cancel'])) {
         botReply = "We offer a 7-day return policy for unopened items. You can also easily cancel unshipped orders directly from your Account Dashboard!";
-      } else if (lower.includes('ingredient') || lower.includes('natural') || lower.includes('chemical') || lower.includes('vegan')) {
+      } else if (checkWords(['ingredient', 'ingredients', 'natural', 'chemical', 'chemicals', 'vegan'])) {
         botReply = "Our products are formulated with Dermal-Grade Botanical ingredients! 🌱 They are 100% vegan, cruelty-free, ISO & GMP Certified, and contain ZERO silicones or harsh chemicals.";
-      } else if (lower.includes('human') || lower.includes('talk') || lower.includes('whatsapp') || lower.includes('agent')) {
+      } else if (checkWords(['human', 'talk', 'whatsapp', 'agent', 'person', 'support'])) {
         botReply = "You can reach our human support team instantly by tapping the back arrow above and selecting 'WhatsApp Support'!";
-      } else if (lower.includes('hi') || lower.includes('hello') || lower.includes('hey')) {
+      } else if (checkWords(['hi', 'hello', 'hey', 'hii', 'hiii'])) {
         botReply = "Hello gorgeous! ✨ How can I help you achieve your dream skin and hair today?";
-      } else if (lower.includes('track') || lower.includes('status')) {
+      } else if (checkWords(['track', 'status', 'order'])) {
         botReply = "You can track your order directly from the Account Dashboard. Once shipped, you will also receive tracking details via email and SMS! 📦";
+      } else if (checkWords(['serum', 'serums', 'best', 'recommend', 'hair serum', 'face serum'])) {
+        botReply = "Both our Hair Serum and Face Serum are absolute bestsellers! Our Virgin 5.0 Hair Serum provides weightless shine and zero silicone feel, while our Glow & Correct Face Serum delivers a daily dose of gentle brightening. ✨";
       }
 
       setMessages(m => [...m, { from: 'bot', text: botReply }]);
