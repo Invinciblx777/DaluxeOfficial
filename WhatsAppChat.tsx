@@ -7,6 +7,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { X, Send, MessageSquare, ChevronLeft, Bot } from 'lucide-react-native';
 import { supabaseClient } from './lib/supabaseClient';
+import { getApiBase } from './lib/apiBase';
 
 const GOLD       = '#C9A227';
 const BG         = '#FDFBF7';
@@ -98,21 +99,30 @@ export default function WhatsAppChat() {
           .map(m => ({ role: m.from === 'user' ? 'user' : 'assistant', content: m.text }))
           .concat([{ role: 'user', content: userMsg }]);
   
-        // Using relative path so it natively routes to the Vercel Next.js backend
-        const res = await fetch('/api/chat', {
+        // Use getApiBase to ensure compatibility with both Web and Native (Expo Go)
+        const API_URL = getApiBase();
+        const res = await fetch(`${API_URL}/api/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ messages: apiMessages }),
         });
   
-        const data = await res.json();
+        let data;
+        try {
+          data = await res.json();
+        } catch (parseError) {
+          console.error('[WhatsAppChat] Failed to parse JSON response. Status:', res.status);
+          throw new Error(`Invalid response from server (Status ${res.status})`);
+        }
+
         if (data.success && data.message?.content) {
           setMessages(m => [...m, { from: 'bot', text: data.message.content }]);
         } else {
           setMessages(m => [...m, { from: 'bot', text: data.error || 'Sorry, I could not process your request right now. Please try again.' }]);
         }
       } catch (e: any) {
-        setMessages(m => [...m, { from: 'bot', text: 'Connection error. Please check your internet and try again.' }]);
+        console.error('[WhatsAppChat] API Error:', e);
+        setMessages(m => [...m, { from: 'bot', text: `Connection error: ${e.message || 'Unknown error'}` }]);
       } finally {
         setLoading(false);
       }
