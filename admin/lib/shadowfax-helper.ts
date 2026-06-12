@@ -188,10 +188,11 @@ export async function createShadowfaxOrder(
       email: pickup.email,
     },
     product_details: input.cartItems.map((item) => ({
-      sku_id: item.product_id,
+      client_sku_id: item.product_id,
       sku_name: item.name || `Product ${item.product_id}`,
       category: 'Skincare',
       price: item.price,
+      quantity: item.quantity,
       additional_details: { quantity: item.quantity },
     })),
   };
