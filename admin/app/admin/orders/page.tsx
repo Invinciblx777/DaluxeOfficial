@@ -169,7 +169,8 @@ export default function OrdersPage() {
                 </td>
                 <td className="px-5 py-4">
                   <p className="font-medium text-sm" style={{ color: '#FAFAFA' }}>{order.customer}</p>
-                  <p className="text-xs mt-0.5" style={{ color: '#52525B' }}>{order.email}</p>
+                  <p className="text-xs mt-0.5" style={{ color: '#A1A1AA' }}>{order.email}</p>
+                  {order.phone && <p className="text-xs mt-0.5" style={{ color: '#52525B' }}>{order.phone}</p>}
                 </td>
                 <td className="px-5 py-4 text-xs" style={{ color: '#71717A' }}>
                   {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
@@ -180,7 +181,15 @@ export default function OrdersPage() {
                     {STATUS_LABEL[order.status]}
                   </span>
                 </td>
-                <td className="px-5 py-4 text-xs" style={{ color: '#71717A' }}>{order.items.length} item{order.items.length !== 1 ? 's' : ''}</td>
+                <td className="px-5 py-4 text-xs" style={{ color: '#A1A1AA' }}>
+                  <div className="flex flex-col gap-1">
+                    {order.items.map((item, idx) => (
+                      <span key={idx} className="truncate max-w-[200px]" title={item.productName}>
+                        <span className="font-semibold text-[10px] uppercase" style={{ color: '#D4AF37' }}>{item.quantity}x</span> {item.productName}
+                      </span>
+                    ))}
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
