@@ -2427,32 +2427,9 @@ export default function CollectionPage({ onNavigateToProduct, scrollY, onViewCha
         }
       });
 
-      // 2. Merge local storage products
-      let localProducts: any[] = [];
-      if (Platform.OS === 'web') {
-        try {
-          const rawStore = localStorage.getItem('daluxe-admin-store');
-          if (rawStore) {
-            const parsed = JSON.parse(rawStore);
-            if (parsed && parsed.state && Array.isArray(parsed.state.products)) {
-              localProducts = parsed.state.products;
-            }
-          }
-        } catch (err) {
-          console.warn('Failed to parse daluxe-admin-store from localStorage:', err);
-        }
-      }
-
-      localProducts.forEach((localP: any) => {
-        const existingIdx = nextProducts.findIndex(p => p.id === localP.id);
-        const staticP = existingIdx >= 0 ? nextProducts[existingIdx] : COLLECTION_PRODUCTS.find(cp => cp.id === localP.id);
-        const merged = normalizeDynamicProduct(localP, staticP);
-        if (existingIdx >= 0) {
-          nextProducts[existingIdx] = merged as any;
-        } else {
-          nextProducts.push(merged as any);
-        }
-      });
+      // Note: admin localStorage state is intentionally NOT used here.
+      // The storefront sources all dynamic product data from Supabase DB only,
+      // ensuring customers always see the authoritative server state.
 
       // Deduplicate by ID just to be absolutely safe
       const uniqueMerged = nextProducts.filter((p, index, self) =>
@@ -2472,21 +2449,8 @@ export default function CollectionPage({ onNavigateToProduct, scrollY, onViewCha
       })
       .subscribe();
 
-    // Real-time localStorage change listener for immediate admin panel preview
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'daluxe-admin-store') {
-        fetchInventory();
-      }
-    };
-    if (Platform.OS === 'web') {
-      window.addEventListener('storage', handleStorageChange);
-    }
-
     return () => {
       supabaseClient.removeChannel(channel);
-      if (Platform.OS === 'web') {
-        window.removeEventListener('storage', handleStorageChange);
-      }
     };
   }, []);
 

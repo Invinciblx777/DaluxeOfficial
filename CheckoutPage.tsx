@@ -51,7 +51,8 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(initialCoupon || null);
   const [couponMsg, setCouponMsg] = useState('');
-  const VALID_COUPONS = ['SUMPI20', 'RASHMI20', 'DIKSHA20', 'PINKY20'];
+  // All valid promo codes — keep in sync with admin/coupons page COUPON_CONFIG
+  const VALID_COUPONS = ['SUMPI20', 'RASHMI20', 'DIKSHA20', 'PINKY20', 'DALUXE10'];
   
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scrollRef = useRef<ScrollView>(null);
@@ -87,17 +88,15 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
   function handleApplyCoupon() {
     const code = couponInput.trim().toUpperCase();
     if (!code) return;
-    if (code === 'DALUXE10') {
+    if (VALID_COUPONS.includes(code)) {
       setAppliedCoupon(code);
       setCouponInput('');
-      setCouponMsg('Coupon applied successfully!');
-    } else if (VALID_COUPONS.includes(code)) {
-      setAppliedCoupon(code);
-      setCouponInput('');
-      setCouponMsg('Coupon applied successfully!');
+      setCouponMsg(`✓ Coupon applied! ${
+        code === 'DALUXE10' ? '10% off your order' : '₹20 off your order'
+      }`);
     } else {
       setAppliedCoupon(null);
-      setCouponMsg('Invalid promo code');
+      setCouponMsg('Invalid promo code. Try: DALUXE10 for 10% off');
     }
   }
 
@@ -144,14 +143,18 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
     setLoading(true);
 
     const orderPayload = {
+      // NOTE: total_amount is ignored by the server — the server recalculates it from DB.
+      // We still send it for backwards compatibility but it is never trusted.
       total_amount: grandTotal,
       email: form.email,
-      coupon_code: appliedCoupon,
-      discount_amount: discountAmount,
+      coupon_code: appliedCoupon || null,
+      discount_amount: Number(discountAmount) || 0,
+      shipping_amount: getShippingAmount(), // sent so server can include in its computation
       shipping_address: {
         name: form.name, phone: form.phone,
         address_line1: form.address, address_line2: '',
-        city: form.city, state: form.state, pincode: form.pincode
+        city: form.city, state: form.state, pincode: form.pincode,
+        email: form.email,
       }
     };
     
@@ -209,18 +212,22 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
+            // NOTE: `amount` is ignored by the server — it recalculates from DB prices.
             amount: grandTotal,
-            coupon_code: appliedCoupon,
-            discount_amount: discountAmount,
+            coupon_code: appliedCoupon || null,
+            discount_amount: Number(discountAmount) || 0,
+            shipping_amount: getShippingAmount(), // sent so server can include in its computation
             cart_items: items.map(i => ({ product_id: i.id, name: i.name, quantity: i.quantity, price: i.price })),
             shipping_address: {
               name: form.name, phone: form.phone,
               address_line1: form.address, address_line2: '',
-              city: form.city, state: form.state, pincode: form.pincode
+              city: form.city, state: form.state, pincode: form.pincode,
+              email: form.email,
             },
             email: form.email
           })
         });
+
 
         // Parse defensively: a misrouted call can return HTML (the SPA shell) instead
         // of JSON, which would otherwise throw and be masked as a generic network error.

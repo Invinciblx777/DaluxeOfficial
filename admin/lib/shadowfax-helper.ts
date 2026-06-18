@@ -198,17 +198,34 @@ export async function createShadowfaxOrder(
   };
 
   try {
-    console.log('[Shadowfax] Creating order for:', input.orderNumber);
+    const env = process.env.SHADOWFAX_ENV || 'STAGING (set SHADOWFAX_ENV=PROD for live)';
+    console.log(`[Shadowfax] Creating order for: ${input.orderNumber} | Env: ${env}`);
+    console.log('[Shadowfax] Payload:', JSON.stringify({
+      order_type: payload.order_type,
+      client_order_id: payload.order_details?.client_order_id,
+      payment_mode: payload.order_details?.payment_mode,
+      cod_amount: payload.order_details?.cod_amount,
+      total_amount: payload.order_details?.total_amount,
+      customer_contact: payload.customer_details?.contact,
+      customer_pincode: payload.customer_details?.pincode,
+      customer_city: payload.customer_details?.city,
+      pickup_city: payload.pickup_details?.city,
+      pickup_pincode: payload.pickup_details?.pincode,
+    }, null, 2));
+
     const res = await ShadowfaxService.createOrder(payload);
+    console.log('[Shadowfax] Raw response:', JSON.stringify(res, null, 2));
 
     // SFX signals validation failures with HTTP 200 + message: "Failure".
     if (res?.message !== 'Success' || !res?.data?.awb_number) {
-      console.error('[Shadowfax] Order creation failed:', JSON.stringify(res?.errors ?? res));
+      console.error('[Shadowfax] Order creation FAILED for', input.orderNumber);
+      console.error('[Shadowfax] Errors:', JSON.stringify(res?.errors ?? res, null, 2));
+      console.error('[Shadowfax] Hint: Check SHADOWFAX_TOKEN, SHADOWFAX_ENV=PROD, pickup address env vars, and pincode serviceability.');
       return null;
     }
 
     const data = res.data;
-    console.log('[Shadowfax] Order created. AWB:', data.awb_number, 'id:', data.id);
+    console.log(`[Shadowfax] ✅ Order created successfully! AWB: ${data.awb_number} | Internal ID: ${data.id}`);
 
     return {
       provider: 'shadowfax',

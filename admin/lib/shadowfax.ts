@@ -33,11 +33,13 @@ export interface SfxResponse<T = any> {
 
 export class ShadowfaxService {
   private static get token(): string {
-    return sanitize(process.env.SHADOWFAX_TOKEN) || '3a13ef2f534911229dc501ba4cec7e8a8eb95736';
+    const t = sanitize(process.env.SHADOWFAX_TOKEN);
+    if (!t) throw new Error('[Shadowfax] SHADOWFAX_TOKEN env var is not set. Configure it in your Vercel/server environment.');
+    return t;
   }
 
   static isConfigured(): boolean {
-    return !!this.token;
+    return !!sanitize(process.env.SHADOWFAX_TOKEN);
   }
 
   private static async request<T = any>(

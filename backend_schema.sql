@@ -167,13 +167,15 @@ CREATE POLICY "Products Select" ON public.products FOR SELECT USING (true);
 CREATE POLICY "Products Admin"  ON public.products FOR ALL    USING (public.is_admin());
 
 -- Orders
+-- SECURITY: 'Orders Insert' and 'Order Items Insert' policies are intentionally OMITTED.
+-- Customers cannot insert orders directly via the anon key (database forgery attack).
+-- Only the Next.js API (using service_role key, which bypasses RLS) can create orders.
 CREATE POLICY "Orders Select" ON public.orders FOR SELECT USING (auth.uid() = user_id OR public.is_admin());
-CREATE POLICY "Orders Insert" ON public.orders FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Orders Admin"  ON public.orders FOR ALL    USING (public.is_admin());
 
 -- Order Items
+-- SECURITY: No Insert policy for customers — only service_role (API) can insert.
 CREATE POLICY "Order Items Select" ON public.order_items FOR SELECT USING (EXISTS (SELECT 1 FROM public.orders WHERE id = order_id AND (user_id = auth.uid() OR public.is_admin())));
-CREATE POLICY "Order Items Insert" ON public.order_items FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM public.orders WHERE id = order_id AND (user_id = auth.uid() OR public.is_admin())));
 CREATE POLICY "Order Items Admin"  ON public.order_items FOR ALL USING (public.is_admin());
 
 -- Profiles

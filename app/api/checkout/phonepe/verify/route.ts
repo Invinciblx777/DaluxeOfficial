@@ -73,8 +73,19 @@ export async function POST(request: Request) {
         .single();
 
       if (pending && pending.status !== 'completed') {
-        const cartItems = JSON.parse(pending.cart_items);
-        const shippingAddress = pending.shipping_address ? JSON.parse(pending.shipping_address) : {};
+        let cartItems: any[] = [];
+        let shippingAddress: any = {};
+        try {
+          cartItems = JSON.parse(pending.cart_items);
+        } catch (parseErr) {
+          console.error('[Verify] Failed to parse cart_items for transaction', transactionId, parseErr);
+          return NextResponse.json({ success: false, error: 'Malformed order data — cart_items could not be parsed' }, { status: 500 });
+        }
+        try {
+          shippingAddress = pending.shipping_address ? JSON.parse(pending.shipping_address) : {};
+        } catch {
+          shippingAddress = {};
+        }
         const orderNumber = `DLX-${Date.now().toString(36).toUpperCase()}`;
 
         const { data: order } = await supabaseAdmin.from('orders').insert({

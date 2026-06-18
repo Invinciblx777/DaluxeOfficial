@@ -710,7 +710,8 @@ export default function App() {
           const localUrl = localStorage.getItem('NEXT_PUBLIC_SUPABASE_URL');
           const localKey = localStorage.getItem('NEXT_PUBLIC_SUPABASE_ANON_KEY');
           if (!localUrl || !localKey) {
-            const res = await fetch('/api/supabase-config');
+            const apiBase = (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL) || '';
+            const res = await fetch(`${apiBase}/api/supabase-config`);
             const json = await res.json();
             if (json.success && json.url && json.key) {
               localStorage.setItem('NEXT_PUBLIC_SUPABASE_URL', json.url);

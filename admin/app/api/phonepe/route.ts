@@ -178,18 +178,78 @@ async function finalizePaidOrder(
   return { ok: true, orderNumber, alreadyExisted: false };
 }
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Max-Age': '86400',
+// ─── Allowed origins for CORS ────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  'https://daluxeofficial.in',
+  'https://www.daluxeofficial.in',
+  process.env.NEXT_PUBLIC_APP_URL,
+  'http://localhost:8081',
+  'http://localhost:3000',
+].filter(Boolean) as string[];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowed = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin',
+  };
+}
+
+// ─── Coupon config (keep in sync with checkout/route.ts and admin coupons page) ─
+const COUPON_CONFIG: Record<string, { type: 'percent' | 'flat'; value: number }> = {
+  DALUXE10: { type: 'percent', value: 10 },
+  SUMPI20:  { type: 'flat',    value: 20 },
+  RASHMI20: { type: 'flat',    value: 20 },
+  DIKSHA20: { type: 'flat',    value: 20 },
+  PINKY20:  { type: 'flat',    value: 20 },
 };
+
+/**
+ * Recalculate the authoritative grand total on the server.
+ * Returns null if any product is unknown (security deny).
+ */
+async function computeTotal(
+  cartItems: Array<{ product_id: string; quantity: number }>,
+  couponCode: string | null,
+  shippingRate: number,
+): Promise<{ subtotal: number; discountAmount: number; grandTotal: number } | null> {
+  if (!cartItems || cartItems.length === 0 || cartItems.length > 50) return null;
+  const productIds = [...new Set(cartItems.map((i) => i.product_id))];
+  const { data: dbProducts, error } = await supabaseAdmin
+    .from('products')
+    .select('id, price')
+    .in('id', productIds);
+  if (error || !dbProducts) return null;
+
+  let subtotal = 0;
+  for (const item of cartItems) {
+    if (item.quantity <= 0 || item.quantity > 100) return null;
+    const dbProduct = dbProducts.find((p) => p.id === item.product_id);
+    if (!dbProduct) return null; // unknown product — deny
+    subtotal += dbProduct.price * item.quantity;
+  }
+
+  let discountAmount = 0;
+  const coupon = couponCode ? COUPON_CONFIG[couponCode.toUpperCase()] : null;
+  if (coupon) {
+    discountAmount = coupon.type === 'percent'
+      ? Math.round(subtotal * (coupon.value / 100))
+      : coupon.value;
+  }
+
+  const grandTotal = Math.max(0, subtotal + shippingRate - discountAmount);
+  return { subtotal, discountAmount, grandTotal };
+}
 
 // Respond to CORS preflight. Without this, cross-origin POSTs from the storefront
 // (Content-Type: application/json + Authorization header) fail the preflight with a
 // 405 and the browser reports a generic "network error". See checkout flow.
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+export async function OPTIONS(req: NextRequest) {
+  const origin = req.headers.get('origin');
+  return new NextResponse(null, { status: 204, headers: getCorsHeaders(origin) });
 }
 
 export async function GET(req: NextRequest) {
@@ -235,21 +295,35 @@ async function handleRequest(req: NextRequest) {
       if (!user) return NextResponse.json({ success: false, error: 'Unauthorized. Please log in.' }, { status: 401 });
 
       const body = await req.json();
-      const { amount, coupon_code, discount_amount, cart_items, shipping_address, email } = body;
-      if (!amount || amount <= 0) return NextResponse.json({ success: false, error: 'Invalid payment amount' }, { status: 400 });
+      const { coupon_code, cart_items, shipping_address, email, shipping_amount } = body;
+
+      if (!cart_items || !Array.isArray(cart_items) || cart_items.length === 0) {
+        return NextResponse.json({ success: false, error: 'Cart is empty' }, { status: 400 });
+      }
+
+      // SERVER-SIDE PRICE RECALCULATION — never trust the client-supplied `amount`
+      const couponCode = typeof coupon_code === 'string' ? coupon_code.trim().toUpperCase() : null;
+      const shippingRate = typeof shipping_amount === 'number' ? shipping_amount : 0;
+      const pricing = await computeTotal(cart_items, couponCode, shippingRate);
+      if (!pricing) {
+        console.error('[PhonePe] Price calculation failed — unknown products or invalid cart');
+        return NextResponse.json({ success: false, error: 'Invalid cart items. Please refresh and try again.' }, { status: 400 });
+      }
+
+      console.log(`[PhonePe] Server computed total: ₹${pricing.grandTotal} (subtotal ₹${pricing.subtotal}, discount -₹${pricing.discountAmount})`);
 
       const merchantOrderId = `DALUXE-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
-      // Save pending order
+      // Save pending order with server-computed amount
       if (cart_items && cart_items.length > 0) {
         const { error: upsertError } = await supabaseAdmin.from('pending_orders').upsert({
           transaction_id: merchantOrderId,
           user_id: user.id,
           cart_items: JSON.stringify(cart_items),
           shipping_address: shipping_address ? JSON.stringify(shipping_address) : null,
-          amount,
-          coupon_code: coupon_code || null,
-          discount_amount: discount_amount || 0,
+          amount: pricing.grandTotal,       // ← server computed
+          coupon_code: couponCode || null,
+          discount_amount: pricing.discountAmount, // ← server computed
           email: email || user.email,
           status: 'initiated',
           created_at: new Date().toISOString(),
@@ -266,7 +340,7 @@ async function handleRequest(req: NextRequest) {
 
       const paymentPayload = {
         merchantOrderId,
-        amount: Math.round(amount * 100),
+        amount: Math.round(pricing.grandTotal * 100), // ← server computed, in paise
         expireAfter: 1200,
         paymentFlow: {
           type: 'PG_CHECKOUT',
