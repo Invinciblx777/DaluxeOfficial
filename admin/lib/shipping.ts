@@ -159,6 +159,6 @@ export async function fulfillShipment(
       .from('orders')
       .update({ shipment_status: `error: ${e?.message || 'unknown'}` })
       .eq('id', orderId);
-    return null;
+    throw e;
   }
 }

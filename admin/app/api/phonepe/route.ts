@@ -158,6 +158,7 @@ async function finalizePaidOrder(
     const orderItems = enrichedCartItems.map((item: any) => ({
       order_id: order.id,
       product_id: item.product_id,
+      name: item.name,
       quantity: item.quantity,
       price: item.price,
     }));

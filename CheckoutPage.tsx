@@ -40,6 +40,7 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
   const [step, setStep] = useState<Step>('details');
   const [loading, setLoading] = useState(false);
   const [paymentDone, setPaymentDone] = useState(false);
+  const [successInfo, setSuccessInfo] = useState<{ total: number; count: number } | null>(null);
 
   // Removed glitched skin assessment background image from checkout
 
@@ -179,6 +180,7 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
       });
       const data = await res.json();
       if (data.success) {
+        setSuccessInfo({ total: grandTotal, count: items.length });
         setPaymentDone(true);
         onSuccess(data.order.order_number);
       } else {
@@ -262,7 +264,7 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
   }
 
   // ─── Success screen ───────────────────────────────────────────────
-  if (paymentDone) {
+  if (paymentDone && successInfo) {
     return (
       <View style={s.successContainer}>
         <LinearGradient colors={[GOLD, GOLD_LIGHT]} style={s.successCircle}>
@@ -274,7 +276,7 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
         </Text>
         <View style={s.successPill}>
           <Text style={s.successPillText}>
-            ₹{grandTotal.toLocaleString('en-IN')} · {items.length} item{items.length > 1 ? 's' : ''}
+            ₹{successInfo.total.toLocaleString('en-IN')} · {successInfo.count} item{successInfo.count > 1 ? 's' : ''}
           </Text>
         </View>
       </View>

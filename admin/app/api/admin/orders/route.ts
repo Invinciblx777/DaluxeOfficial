@@ -86,14 +86,19 @@ export async function GET(req: Request) {
       // Fallback 1: try cart_summary stored on the order row itself (reliable)
       if (relatedItems.length === 0 && order.cart_summary) {
         try {
-          const parsed = JSON.parse(order.cart_summary);
+          let parsed = order.cart_summary;
+          if (typeof parsed === 'string') {
+            parsed = JSON.parse(parsed);
+          }
           if (Array.isArray(parsed) && parsed.length > 0) {
             relatedItems = parsed.map((item: any) => ({
               ...item,
               name: PRODUCT_NAMES[item.product_id] || item.name || 'Daluxe Product',
             }));
           }
-        } catch {}
+        } catch (e) {
+          console.error('[Admin Orders API] Error parsing cart_summary:', e);
+        }
       }
 
       // Fallback 2: if still empty, show a generic placeholder

@@ -221,7 +221,9 @@ export async function createShadowfaxOrder(
       console.error('[Shadowfax] Order creation FAILED for', input.orderNumber);
       console.error('[Shadowfax] Errors:', JSON.stringify(res?.errors ?? res, null, 2));
       console.error('[Shadowfax] Hint: Check SHADOWFAX_TOKEN, SHADOWFAX_ENV=PROD, pickup address env vars, and pincode serviceability.');
-      return null;
+      
+      const errReason = res?.errors ? JSON.stringify(res.errors) : (res?.message || 'Validation Failed');
+      throw new Error(`Shadowfax rejected: ${errReason}`);
     }
 
     const data = res.data;
@@ -235,6 +237,6 @@ export async function createShadowfaxOrder(
     };
   } catch (e) {
     console.error('[Shadowfax] createShadowfaxOrder failed:', e);
-    return null;
+    throw e;
   }
 }
