@@ -229,42 +229,47 @@ async function handleRequest(req: NextRequest) {
         price: PRODUCT_PRICES[item.product_id] || item.price,
       }));
 
-      const { data: order, error: orderError } = await supabaseAdmin.from('orders').insert({
+      // Build base order row (without cart_summary for fallback)
+      const baseRow: Record<string, any> = {
         user_id: user.id,
         order_number: orderNumber,
-        total_amount: pricing.grandTotal,       // ← server computed, never client value
+        total_amount: pricing.grandTotal,
         coupon_code: couponCode || null,
-        discount_amount: pricing.discountAmount, // ← server computed
+        discount_amount: pricing.discountAmount,
         payment_method: 'cod',
         payment_gateway: 'cod',
         status: 'confirmed',
         shipping_address: orderPayload.shipping_address,
         email: orderPayload.email,
-        cart_summary: JSON.stringify(enrichedCartItems), // ← store items on order row as fallback
-      }).select().single();
+      };
 
-      if (orderError) {
-        // cart_summary column may not exist yet — retry without it
-        const { data: order2, error: orderError2 } = await supabaseAdmin.from('orders').insert({
-          user_id: user.id,
-          order_number: orderNumber,
-          total_amount: pricing.grandTotal,
-          coupon_code: couponCode || null,
-          discount_amount: pricing.discountAmount,
-          payment_method: 'cod',
-          payment_gateway: 'cod',
-          status: 'confirmed',
-          shipping_address: orderPayload.shipping_address,
-          email: orderPayload.email,
-        }).select().single();
-        if (orderError2) {
-          console.error('[Order Creation Error]:', orderError2);
-          return NextResponse.json({ success: false, error: `Failed to create order: ${orderError2.message}` }, { status: 500, headers: corsHeaders });
+      // Try insert WITH cart_summary first; fall back without if column missing
+      let finalOrder: any = null;
+
+      const { data: r1, error: e1 } = await supabaseAdmin
+        .from('orders')
+        .insert({ ...baseRow, cart_summary: JSON.stringify(enrichedCartItems) })
+        .select()
+        .single();
+
+      if (!e1 && r1) {
+        finalOrder = r1;
+      } else {
+        console.warn('[COD] cart_summary insert failed, retrying without:', e1?.message);
+        const { data: r2, error: e2 } = await supabaseAdmin
+          .from('orders')
+          .insert(baseRow)
+          .select()
+          .single();
+        if (e2 || !r2) {
+          console.error('[Order Creation Error]:', e2);
+          return NextResponse.json(
+            { success: false, error: `Failed to create order: ${e2?.message}` },
+            { status: 500, headers: corsHeaders }
+          );
         }
-        (order as any) = order2;
+        finalOrder = r2;
       }
-
-      const finalOrder = order as any;
 
       const orderItems = enrichedCartItems.map((item: any) => ({
         order_id: finalOrder.id,
