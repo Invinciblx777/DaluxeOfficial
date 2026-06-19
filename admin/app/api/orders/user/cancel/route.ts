@@ -43,13 +43,13 @@ export async function POST(req: NextRequest) {
 
     // Cancel in Shadowfax
     try {
-      // For Shadowfax, the requestId is typically the order.id or order.order_number.
-      // We'll pass the UUID order.id which was used to create the shipment.
-      console.log(`[Cancel API] Attempting to cancel Shadowfax order for ${order.id}`);
-      const res = await ShadowfaxService.cancelOrder(order.id, 'Cancelled by customer');
+      // For Shadowfax, the requestId must be the AWB or client_order_id (order_number).
+      const requestId = order.awb_code || order.order_number;
+      console.log(`[Cancel API] Attempting to cancel Shadowfax order with ID/AWB: ${requestId}`);
+      const res = await ShadowfaxService.cancelOrder(requestId, 'Cancelled by customer');
       console.log(`[Cancel API] Shadowfax cancel result:`, res);
     } catch (e: any) {
-      console.error(`[Cancel API] Failed to cancel Shadowfax order ${order.id}:`, e);
+      console.error(`[Cancel API] Failed to cancel Shadowfax order ${order.order_number}:`, e);
       // We continue even if SFX fails, since they might not have a shipment yet
     }
 

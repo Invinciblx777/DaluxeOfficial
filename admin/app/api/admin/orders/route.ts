@@ -93,18 +93,31 @@ export async function GET(req: Request) {
       }));
       const relatedProfile = profiles.find((p) => p.id === order.user_id) || null;
       
-      // Fallback 1: try cart_summary stored on the order row itself (reliable)
-      if (relatedItems.length === 0 && order.cart_summary) {
+      // If we still have 'Daluxe Product' or missing items, try cart_summary stored on the order row itself
+      if ((relatedItems.length === 0 || relatedItems.some(i => i.name === 'Daluxe Product')) && order.cart_summary) {
         try {
           let parsed = order.cart_summary;
           if (typeof parsed === 'string') {
             parsed = JSON.parse(parsed);
           }
           if (Array.isArray(parsed) && parsed.length > 0) {
-            relatedItems = parsed.map((item: any) => ({
-              ...item,
-              name: PRODUCT_NAMES[item.product_id] || dynamicNames[item.product_id as string] || item.name || 'Daluxe Product',
-            }));
+            if (relatedItems.length === 0) {
+              relatedItems = parsed.map((item: any) => ({
+                ...item,
+                name: PRODUCT_NAMES[item.product_id] || dynamicNames[item.product_id as string] || item.name || 'Daluxe Product',
+              }));
+            } else {
+              // Patch names for existing items that resolved to 'Daluxe Product'
+              relatedItems = relatedItems.map(item => {
+                if (item.name === 'Daluxe Product') {
+                  const summaryItem = parsed.find((p: any) => p.product_id === item.product_id);
+                  if (summaryItem && summaryItem.name) {
+                    item.name = summaryItem.name;
+                  }
+                }
+                return item;
+              });
+            }
           }
         } catch (e) {
           console.error('[Admin Orders API] Error parsing cart_summary:', e);
