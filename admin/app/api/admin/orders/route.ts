@@ -12,6 +12,17 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
+const PRODUCT_NAMES: Record<string, string> = {
+  'facewash': 'Gold Glow Facewash',
+  'hairserum': 'Hair Serum',
+  'faceserum': 'Face Serum',
+  'nightcream': 'Night Cream',
+  'hairoil': 'Hair Oil',
+  'hairshampoo': 'Hair Shampoo',
+  'skin-combo': 'Skin Care Combo',
+  'hair-combo': 'Hair Care Combo',
+};
+
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }
@@ -66,7 +77,10 @@ export async function GET(req: Request) {
 
     // Stitch data together in memory to completely bypass PostgREST foreign-key requirements
     const stitchedData = (orders || []).map((order) => {
-      let relatedItems = orderItems.filter((i) => i.order_id === order.id);
+      let relatedItems = orderItems.filter((i) => i.order_id === order.id).map(item => ({
+        ...item,
+        name: PRODUCT_NAMES[item.product_id] || item.name || 'Daluxe Product'
+      }));
       const relatedProfile = profiles.find((p) => p.id === order.user_id) || null;
       
       // Fallback for corrupted historical orders where order_items failed to insert

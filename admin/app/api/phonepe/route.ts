@@ -136,9 +136,8 @@ async function finalizePaidOrder(
     const orderItems = cartItems.map((item: any) => ({
       order_id: order.id,
       product_id: item.product_id,
-      name: item.name || `Product ${item.product_id}`,
       quantity: item.quantity,
-      price: item.price,
+      price: PRODUCT_PRICES[item.product_id] || item.price,
     }));
     const { error: itemsErr } = await supabaseAdmin.from('order_items').insert(orderItems);
     if (itemsErr) console.error('[PhonePe] Order items error:', itemsErr);
