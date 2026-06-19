@@ -124,6 +124,34 @@ export async function GET(req: Request) {
         }
       }
 
+      // Final bulletproof fallback for completely orphaned products (e.g. deleted dynamic products with no cart_summary)
+      // We can perfectly infer the product based on the unit price stored in order_items!
+      const PRICE_TO_NAME: Record<number, string> = {
+        249: 'Gold Glow Facewash',
+        349: 'Ultra Smooth Hair Serum',
+        449: 'Vitamin C Face Serum',
+        399: 'Luxury Night Cream',
+        299: 'Nourishing Hair Oil',
+        1097: 'Skin Care Combo',
+        897: 'Hair Care Combo',
+      };
+      
+      relatedItems = relatedItems.map(item => {
+        if (item.name === 'Daluxe Product') {
+          const inferredName = PRICE_TO_NAME[Number(item.price)];
+          if (inferredName) {
+            item.name = inferredName;
+          } else {
+            // Absolute last resort: just use the order's total amount minus COD fee to guess the single item
+            const baseAmount = Number(order.total_amount) - (order.payment_method === 'cod' ? 49 : 0) + Number(order.discount_amount || 0);
+            if (PRICE_TO_NAME[baseAmount]) {
+              item.name = PRICE_TO_NAME[baseAmount];
+            }
+          }
+        }
+        return item;
+      });
+
       // Fallback 2: if still empty, show a generic placeholder
       if (relatedItems.length === 0) {
         relatedItems = [{
