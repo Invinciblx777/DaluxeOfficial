@@ -99,45 +99,67 @@ async function finalizePaidOrder(
   const shippingAddr = safeParse<any>(pending.shipping_address, {});
   const orderNumber = `DLX-${Date.now().toString(36).toUpperCase()}`;
 
+  // Enrich cart items with authoritative names and prices
+  const enrichedCartItems = cartItems.map((item: any) => ({
+    product_id: item.product_id,
+    name: PRODUCT_NAMES[item.product_id] || item.name || item.product_id,
+    quantity: item.quantity,
+    price: PRODUCT_PRICES[item.product_id] || item.price,
+  }));
+
   // 3. Create the order. A unique index on transaction_id guards against
   //    double-fulfilment from a callback/verify race.
-  const { data: order, error: orderErr } = await supabaseAdmin
+  let order: any = null;
+  const baseOrderData = {
+    user_id: pending.user_id,
+    order_number: orderNumber,
+    total_amount: pending.amount,
+    coupon_code: pending.coupon_code || null,
+    discount_amount: pending.discount_amount || 0,
+    payment_method: 'phonepe',
+    payment_gateway: 'phonepe',
+    status: 'confirmed',
+    shipping_address: shippingAddr,
+    email: pending.email || 'customer@daluxeskincare.com',
+    transaction_id: transactionId,
+  };
+
+  const { data: orderWithSummary, error: orderErr1 } = await supabaseAdmin
     .from('orders')
-    .insert({
-      user_id: pending.user_id,
-      order_number: orderNumber,
-      total_amount: pending.amount,
-      coupon_code: pending.coupon_code || null,
-      discount_amount: pending.discount_amount || 0,
-      payment_method: 'phonepe',
-      payment_gateway: 'phonepe',
-      status: 'confirmed',
-      shipping_address: shippingAddr,
-      email: pending.email || 'customer@daluxeskincare.com',
-      transaction_id: transactionId,
-    })
+    .insert({ ...baseOrderData, cart_summary: JSON.stringify(enrichedCartItems) })
     .select()
     .single();
 
-  if (orderErr || !order) {
-    // A concurrent fulfilment likely won the unique-transaction_id race.
-    const { data: raced } = await supabaseAdmin
+  if (!orderErr1 && orderWithSummary) {
+    order = orderWithSummary;
+  } else {
+    // cart_summary column may not exist yet — retry without it
+    const { data: orderWithout, error: orderErr2 } = await supabaseAdmin
       .from('orders')
-      .select('order_number')
-      .eq('transaction_id', transactionId)
-      .maybeSingle();
-    if (raced) return { ok: true, orderNumber: raced.order_number, alreadyExisted: true };
-    console.error('[PhonePe] Order insert failed:', orderErr);
-    return { ok: false, error: orderErr?.message || 'Failed to create order' };
+      .insert(baseOrderData)
+      .select()
+      .single();
+    if (orderErr2 || !orderWithout) {
+      // A concurrent fulfilment likely won the unique-transaction_id race.
+      const { data: raced } = await supabaseAdmin
+        .from('orders')
+        .select('order_number')
+        .eq('transaction_id', transactionId)
+        .maybeSingle();
+      if (raced) return { ok: true, orderNumber: raced.order_number, alreadyExisted: true };
+      console.error('[PhonePe] Order insert failed:', orderErr2);
+      return { ok: false, error: orderErr2?.message || 'Failed to create order' };
+    }
+    order = orderWithout;
   }
 
   // 4. Order items + stock + cart/pending cleanup.
-  if (cartItems.length) {
-    const orderItems = cartItems.map((item: any) => ({
+  if (enrichedCartItems.length) {
+    const orderItems = enrichedCartItems.map((item: any) => ({
       order_id: order.id,
       product_id: item.product_id,
       quantity: item.quantity,
-      price: PRODUCT_PRICES[item.product_id] || item.price,
+      price: item.price,
     }));
     const { error: itemsErr } = await supabaseAdmin.from('order_items').insert(orderItems);
     if (itemsErr) console.error('[PhonePe] Order items error:', itemsErr);
@@ -169,7 +191,7 @@ async function finalizePaidOrder(
       pincode: shippingAddr.pincode || '',
       phone: shippingAddr.phone || '',
     },
-    cartItems,
+    cartItems: enrichedCartItems,
     totalAmount: pending.amount,
     paymentMethod: 'Prepaid',
   });
@@ -218,6 +240,18 @@ const PRODUCT_PRICES: Record<string, number> = {
   'hair-combo': 897,
 };
 
+const PRODUCT_NAMES: Record<string, string> = {
+  'facewash': 'Gold Glow Facewash',
+  'hairserum': 'Ultra Smooth Hair Serum',
+  'faceserum': 'Vitamin C Face Serum',
+  'nightcream': 'Luxury Night Cream',
+  'hairoil': 'Nourishing Hair Oil',
+  'hairshampoo': 'Reviving Hair Shampoo',
+  'skin-combo': 'Skin Care Combo',
+  'hair-combo': 'Hair Care Combo',
+};
+
+// ─── Shared Utilities ────────────────────────────────────────────────────────
 async function computeGrandTotal(
   cartItems: Array<{ product_id: string; quantity: number }>,
   couponCode: string | null,
