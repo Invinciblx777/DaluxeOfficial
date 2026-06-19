@@ -506,11 +506,10 @@ function StateSelectField({ label, value, onChange, error }: any) {
             paddingRight: 16,
             backgroundColor: '#FFFFFF',
             borderWidth: 1,
-            borderColor: error ? '#EF4444' : focused ? GOLD : BORDER,
-            borderRadius: 8,
-            fontSize: 14,
-            fontFamily: 'Inter, sans-serif',
-            color: TEXT_PRIMARY,
+            borderColor: error ? '#EF4444' : focused ? GOLD : 'rgba(0,0,0,0.1)',
+            borderRadius: 12,
+            fontSize: 15,
+            color: TEXT,
             outline: 'none',
           } as any}
         >
