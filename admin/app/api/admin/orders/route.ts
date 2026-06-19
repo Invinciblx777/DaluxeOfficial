@@ -75,11 +75,21 @@ export async function GET(req: Request) {
       profilesError = e;
     }
 
+    // Fetch products safely to resolve names for dynamic products
+    let dynamicProducts: any[] = [];
+    try {
+      const { data: prods } = await supabaseAdmin.from('products').select('id, name');
+      if (prods) dynamicProducts = prods;
+    } catch (e) {
+      console.error('[Admin Orders API] Exception fetching products:', e);
+    }
+    const dynamicNames = dynamicProducts.reduce((acc, p) => ({ ...acc, [p.id]: p.name }), {});
+
     // Stitch data together in memory to completely bypass PostgREST foreign-key requirements
     const stitchedData = (orders || []).map((order) => {
       let relatedItems = orderItems.filter((i) => i.order_id === order.id).map(item => ({
         ...item,
-        name: PRODUCT_NAMES[item.product_id] || item.name || 'Daluxe Product'
+        name: PRODUCT_NAMES[item.product_id] || dynamicNames[item.product_id as string] || item.name || 'Daluxe Product'
       }));
       const relatedProfile = profiles.find((p) => p.id === order.user_id) || null;
       
@@ -93,7 +103,7 @@ export async function GET(req: Request) {
           if (Array.isArray(parsed) && parsed.length > 0) {
             relatedItems = parsed.map((item: any) => ({
               ...item,
-              name: PRODUCT_NAMES[item.product_id] || item.name || 'Daluxe Product',
+              name: PRODUCT_NAMES[item.product_id] || dynamicNames[item.product_id as string] || item.name || 'Daluxe Product',
             }));
           }
         } catch (e) {
