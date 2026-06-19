@@ -124,6 +124,18 @@ export async function GET(req: Request) {
         }
       }
 
+        // Fallback 2: if still empty, show a generic placeholder (do this BEFORE price inference)
+      if (relatedItems.length === 0) {
+        relatedItems = [{
+          id: 'dummy-' + order.id,
+          order_id: order.id,
+          product_id: 'unknown',
+          name: 'Daluxe Product',
+          quantity: 1,
+          price: order.total_amount
+        }];
+      }
+
       // Final bulletproof fallback for completely orphaned products (e.g. deleted dynamic products with no cart_summary)
       // We can perfectly infer the product based on the unit price stored in order_items!
       const PRICE_TO_NAME: Record<number, string> = {
@@ -137,7 +149,7 @@ export async function GET(req: Request) {
       };
       
       relatedItems = relatedItems.map(item => {
-        if (item.name === 'Daluxe Product') {
+        if (item.name === 'Daluxe Product' || item.name === 'Product') {
           const inferredName = PRICE_TO_NAME[Number(item.price)];
           if (inferredName) {
             item.name = inferredName;
@@ -146,23 +158,13 @@ export async function GET(req: Request) {
             const baseAmount = Number(order.total_amount) - (order.payment_method === 'cod' ? 49 : 0) + Number(order.discount_amount || 0);
             if (PRICE_TO_NAME[baseAmount]) {
               item.name = PRICE_TO_NAME[baseAmount];
+            } else {
+              // Extremely weird amount. Just use the nearest product price? No, leave as Daluxe Product.
             }
           }
         }
         return item;
       });
-
-      // Fallback 2: if still empty, show a generic placeholder
-      if (relatedItems.length === 0) {
-        relatedItems = [{
-          id: 'dummy-' + order.id,
-          order_id: order.id,
-          product_id: 'unknown',
-          name: 'Daluxe Product',
-          quantity: 1,
-          price: order.total_amount
-        }];
-      }
 
       return {
         ...order,
