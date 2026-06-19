@@ -80,6 +80,9 @@ ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS email                TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS payment_gateway       TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS shipment_status       TEXT DEFAULT 'pending';
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS updated_at           TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS coupon_code          TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS discount_amount      NUMERIC(10,2) DEFAULT 0;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS courier_provider     TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_orders_user_id    ON public.orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status     ON public.orders(status);

@@ -27,26 +27,7 @@ export async function GET(req: Request) {
     const { data, error } = await supabaseAdmin
       .from('orders')
       .select(`
-        id,
-        order_number,
-        user_id,
-        status,
-        total_amount,
-        coupon_code,
-        discount_amount,
-        payment_method,
-        payment_gateway,
-        payment_id,
-        transaction_id,
-        email,
-        shipping_address,
-        shipment_status,
-        awb_code,
-        shipment_id,
-        shiprocket_order_id,
-        courier_provider,
-        created_at,
-        updated_at,
+        *,
         profiles(full_name, email, phone),
         order_items(id, product_id, name, quantity, price)
       `)

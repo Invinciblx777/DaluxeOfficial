@@ -273,8 +273,16 @@ export const useAdminStore = create<AdminStore>()(
           }
 
           if (!res.ok) {
-            const errorMsg = `Server error (${res.status}) — failed to load orders.`;
-            console.error('[Admin Store] HTTP Error:', res.status, res.statusText);
+            let errorMsg = `Server error (${res.status}) — failed to load orders.`;
+            try {
+              const errJson = await res.json();
+              if (errJson.error) {
+                errorMsg += ` Detail: ${errJson.error}`;
+              }
+            } catch (e) {
+              // Ignore if not JSON
+            }
+            console.error('[Admin Store] HTTP Error:', res.status, res.statusText, errorMsg);
             set({ ordersError: errorMsg, isLoading: false });
             return;
           }
