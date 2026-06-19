@@ -108,6 +108,7 @@ export default function CouponsPage() {
         date: new Date(o.createdAt),
         orderNumber: o.orderNumber,
         orderTotal: o.total,
+        status: o.status ?? 'confirmed',
       }))
       .sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [orders]);
@@ -198,6 +199,7 @@ export default function CouponsPage() {
                 <TableHead>Order</TableHead>
                 <TableHead>Order Total</TableHead>
                 <TableHead>Discount</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Date</TableHead>
               </TableRow>
             </TableHeader>
@@ -221,6 +223,18 @@ export default function CouponsPage() {
                     <TableCell>
                       <span className="text-green-600 font-semibold">-₹{usage.discountAmount.toLocaleString('en-IN')}</span>
                     </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        usage.status === 'delivered' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+                        usage.status === 'cancelled' ? 'bg-red-100 text-red-700 border border-red-200' :
+                        usage.status === 'shipped' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+                        usage.status === 'pending' ? 'bg-orange-100 text-orange-700 border border-orange-200' :
+                        'bg-green-100 text-green-700 border border-green-200'
+                      }`}>
+                        <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: 'currentColor' }} />
+                        {usage.status.charAt(0).toUpperCase() + usage.status.slice(1)}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-right text-xs text-muted-foreground">
                       {dateFormatter.format(usage.date)}
                     </TableCell>
@@ -228,7 +242,7 @@ export default function CouponsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
                     {orders.length === 0
                       ? 'No orders loaded yet — check the Orders page for connection issues.'
                       : 'No coupons have been used yet.'
