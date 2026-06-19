@@ -306,7 +306,7 @@ async function handleRequest(req: NextRequest) {
       // SERVER-SIDE PRICE RECALCULATION — never trust the client-supplied `amount`
       const couponCode = typeof coupon_code === 'string' ? coupon_code.trim().toUpperCase() : null;
       const shippingRate = typeof shipping_amount === 'number' ? shipping_amount : 0;
-      const pricing = await computeTotal(cart_items, couponCode, shippingRate);
+      const pricing = await computeGrandTotal(cart_items, couponCode, shippingRate);
       if (!pricing) {
         console.error('[PhonePe] Price calculation failed — unknown products or invalid cart');
         return NextResponse.json({ success: false, error: 'Invalid cart items. Please refresh and try again.' }, { status: 400 });
