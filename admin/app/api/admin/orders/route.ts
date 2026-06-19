@@ -75,7 +75,7 @@ export async function GET(req: Request) {
           id: 'dummy-' + order.id,
           order_id: order.id,
           product_id: 'unknown',
-          name: 'Recovered Item (History Lost)',
+          name: 'Daluxe Product',
           quantity: 1,
           price: order.total_amount
         }];
