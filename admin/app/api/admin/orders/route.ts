@@ -23,14 +23,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401, headers: CORS_HEADERS });
     }
 
-    // Fetch all order fields including coupon/discount/shipment data
-    const { data, error } = await supabaseAdmin
+    // Fetch orders
+    const { data: orders, error } = await supabaseAdmin
       .from('orders')
-      .select(`
-        *,
-        profiles(full_name, email, phone),
-        order_items(id, product_id, name, quantity, price)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -38,7 +34,37 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500, headers: CORS_HEADERS });
     }
 
-    return NextResponse.json({ success: true, data }, { headers: CORS_HEADERS });
+    // Fetch order_items safely (ignore if fails or table missing)
+    let orderItems: any[] = [];
+    try {
+      const { data: items } = await supabaseAdmin.from('order_items').select('*');
+      if (items) orderItems = items;
+    } catch (e) {
+      console.warn('[Admin Orders API] Could not fetch order_items:', e);
+    }
+
+    // Fetch profiles safely (ignore if fails or table missing)
+    let profiles: any[] = [];
+    try {
+      const { data: profs } = await supabaseAdmin.from('profiles').select('id, full_name, email, phone');
+      if (profs) profiles = profs;
+    } catch (e) {
+      console.warn('[Admin Orders API] Could not fetch profiles:', e);
+    }
+
+    // Stitch data together in memory to completely bypass PostgREST foreign-key requirements
+    const stitchedData = (orders || []).map((order) => {
+      const relatedItems = orderItems.filter((i) => i.order_id === order.id);
+      const relatedProfile = profiles.find((p) => p.id === order.user_id) || null;
+      
+      return {
+        ...order,
+        order_items: relatedItems,
+        profiles: relatedProfile,
+      };
+    });
+
+    return NextResponse.json({ success: true, data: stitchedData }, { headers: CORS_HEADERS });
   } catch (error: any) {
     console.error('[Admin Orders API Error]:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500, headers: CORS_HEADERS });
