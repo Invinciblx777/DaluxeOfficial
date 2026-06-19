@@ -48,6 +48,17 @@ const PRODUCT_PRICES: Record<string, number> = {
   'hair-combo': 897,
 };
 
+const PRODUCT_NAMES: Record<string, string> = {
+  'facewash': 'Gold Glow Facewash',
+  'hairserum': 'Ultra Smooth Hair Serum',
+  'faceserum': 'Vitamin C Face Serum',
+  'nightcream': 'Luxury Night Cream',
+  'hairoil': 'Nourishing Hair Oil',
+  'hairshampoo': 'Reviving Hair Shampoo',
+  'skin-combo': 'Skin Care Combo',
+  'hair-combo': 'Hair Care Combo',
+};
+
 /**
  * Compute the authoritative grand total server-side so the client cannot
  * manipulate prices by altering the HTTP request body.
@@ -210,6 +221,14 @@ async function handleRequest(req: NextRequest) {
 
       const orderNumber = `DLX-COD-${Date.now().toString(36).toUpperCase()}`;
 
+      // Enrich cart items with server-authoritative names and prices
+      const enrichedCartItems = cartItems.map((item: any) => ({
+        product_id: item.product_id,
+        name: PRODUCT_NAMES[item.product_id] || item.name || item.product_id,
+        quantity: item.quantity,
+        price: PRODUCT_PRICES[item.product_id] || item.price,
+      }));
+
       const { data: order, error: orderError } = await supabaseAdmin.from('orders').insert({
         user_id: user.id,
         order_number: orderNumber,
@@ -221,18 +240,35 @@ async function handleRequest(req: NextRequest) {
         status: 'confirmed',
         shipping_address: orderPayload.shipping_address,
         email: orderPayload.email,
+        cart_summary: JSON.stringify(enrichedCartItems), // ← store items on order row as fallback
       }).select().single();
 
       if (orderError) {
-        console.error('[Order Creation Error]:', orderError);
-        return NextResponse.json({ success: false, error: `Failed to create order: ${orderError.message}` }, { status: 500, headers: corsHeaders });
+        // cart_summary column may not exist yet — retry without it
+        const { data: order2, error: orderError2 } = await supabaseAdmin.from('orders').insert({
+          user_id: user.id,
+          order_number: orderNumber,
+          total_amount: pricing.grandTotal,
+          coupon_code: couponCode || null,
+          discount_amount: pricing.discountAmount,
+          payment_method: 'cod',
+          payment_gateway: 'cod',
+          status: 'confirmed',
+          shipping_address: orderPayload.shipping_address,
+          email: orderPayload.email,
+        }).select().single();
+        if (orderError2) {
+          console.error('[Order Creation Error]:', orderError2);
+          return NextResponse.json({ success: false, error: `Failed to create order: ${orderError2.message}` }, { status: 500, headers: corsHeaders });
+        }
+        (order as any) = order2;
       }
 
-      const orderItems = cartItems.map((item: any) => ({
-        order_id: order.id,
+      const orderItems = enrichedCartItems.map((item: any) => ({
+        order_id: finalOrder.id,
         product_id: item.product_id,
         quantity: item.quantity,
-        price: PRODUCT_PRICES[item.product_id] || item.price,
+        price: item.price,
       }));
 
       const { error: itemsErr } = await supabaseAdmin.from('order_items').insert(orderItems);
@@ -249,8 +285,8 @@ async function handleRequest(req: NextRequest) {
       await supabaseAdmin.from('cart_items').delete().eq('user_id', user.id);
 
       const addr = orderPayload.shipping_address || {};
-      await fulfillShipment(order.id, {
-        orderId: order.id,
+      await fulfillShipment(finalOrder.id, {
+        orderId: finalOrder.id,
         orderNumber,
         email: orderPayload.email || user.email || '',
         phone: addr.phone || '',
@@ -263,12 +299,12 @@ async function handleRequest(req: NextRequest) {
           pincode: addr.pincode || '',
           phone: addr.phone || '',
         },
-        cartItems,
+        cartItems: enrichedCartItems,
         totalAmount: pricing.grandTotal,
         paymentMethod: 'COD',
       });
 
-      return NextResponse.json({ success: true, order: { order_number: order.order_number } }, { headers: corsHeaders });
+      return NextResponse.json({ success: true, order: { order_number: finalOrder.order_number } }, { headers: corsHeaders });
     } catch (e: any) {
       return NextResponse.json({ success: false, error: e.message }, { status: 500, headers: corsHeaders });
     }

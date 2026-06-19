@@ -83,7 +83,20 @@ export async function GET(req: Request) {
       }));
       const relatedProfile = profiles.find((p) => p.id === order.user_id) || null;
       
-      // Fallback for corrupted historical orders where order_items failed to insert
+      // Fallback 1: try cart_summary stored on the order row itself (reliable)
+      if (relatedItems.length === 0 && order.cart_summary) {
+        try {
+          const parsed = JSON.parse(order.cart_summary);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            relatedItems = parsed.map((item: any) => ({
+              ...item,
+              name: PRODUCT_NAMES[item.product_id] || item.name || 'Daluxe Product',
+            }));
+          }
+        } catch {}
+      }
+
+      // Fallback 2: if still empty, show a generic placeholder
       if (relatedItems.length === 0) {
         relatedItems = [{
           id: 'dummy-' + order.id,
