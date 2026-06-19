@@ -39,7 +39,6 @@ export async function GET(req: Request) {
         payment_id,
         transaction_id,
         email,
-        phone,
         shipping_address,
         shipment_status,
         awb_code,
