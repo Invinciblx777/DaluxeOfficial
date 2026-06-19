@@ -235,6 +235,9 @@ async function handleRequest(req: NextRequest) {
       const { error: itemsErr } = await supabaseAdmin.from('order_items').insert(orderItems);
       if (itemsErr) {
         console.error('[Order Items Creation Error]:', itemsErr);
+        // ROLLBACK: Delete the order so we don't have an empty order sitting in the DB
+        await supabaseAdmin.from('orders').delete().eq('id', order.id);
+        return NextResponse.json({ success: false, error: `Critical Database Error: Failed to save order items. Make sure your database schema is up to date.` }, { status: 500, headers: corsHeaders });
       }
 
       for (const item of cartItems) {
