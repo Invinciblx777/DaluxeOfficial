@@ -264,6 +264,8 @@ async function handleRequest(req: NextRequest) {
         (order as any) = order2;
       }
 
+      const finalOrder = order as any;
+
       const orderItems = enrichedCartItems.map((item: any) => ({
         order_id: finalOrder.id,
         product_id: item.product_id,
