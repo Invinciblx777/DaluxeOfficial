@@ -36,27 +36,51 @@ export async function GET(req: Request) {
 
     // Fetch order_items safely (ignore if fails or table missing)
     let orderItems: any[] = [];
+    let orderItemsError: any = null;
     try {
-      const { data: items } = await supabaseAdmin.from('order_items').select('*');
+      const { data: items, error: itemsErr } = await supabaseAdmin.from('order_items').select('*');
+      if (itemsErr) {
+        orderItemsError = itemsErr;
+        console.error('[Admin Orders API] Error fetching order_items:', itemsErr);
+      }
       if (items) orderItems = items;
     } catch (e) {
-      console.warn('[Admin Orders API] Could not fetch order_items:', e);
+      console.error('[Admin Orders API] Exception fetching order_items:', e);
+      orderItemsError = e;
     }
 
     // Fetch profiles safely (ignore if fails or table missing)
     let profiles: any[] = [];
+    let profilesError: any = null;
     try {
-      const { data: profs } = await supabaseAdmin.from('profiles').select('id, full_name, email, phone');
+      const { data: profs, error: profsErr } = await supabaseAdmin.from('profiles').select('id, full_name, email, phone');
+      if (profsErr) {
+        profilesError = profsErr;
+        console.error('[Admin Orders API] Error fetching profiles:', profsErr);
+      }
       if (profs) profiles = profs;
     } catch (e) {
-      console.warn('[Admin Orders API] Could not fetch profiles:', e);
+      console.error('[Admin Orders API] Exception fetching profiles:', e);
+      profilesError = e;
     }
 
     // Stitch data together in memory to completely bypass PostgREST foreign-key requirements
     const stitchedData = (orders || []).map((order) => {
-      const relatedItems = orderItems.filter((i) => i.order_id === order.id);
+      let relatedItems = orderItems.filter((i) => i.order_id === order.id);
       const relatedProfile = profiles.find((p) => p.id === order.user_id) || null;
       
+      // Fallback for corrupted historical orders where order_items failed to insert
+      if (relatedItems.length === 0) {
+        relatedItems = [{
+          id: 'dummy-' + order.id,
+          order_id: order.id,
+          product_id: 'unknown',
+          name: 'Recovered Item (History Lost)',
+          quantity: 1,
+          price: order.total_amount
+        }];
+      }
+
       return {
         ...order,
         order_items: relatedItems,
@@ -64,7 +88,16 @@ export async function GET(req: Request) {
       };
     });
 
-    return NextResponse.json({ success: true, data: stitchedData }, { headers: CORS_HEADERS });
+    return NextResponse.json({ 
+      success: true, 
+      data: stitchedData,
+      debug: {
+        orderItemsFetched: orderItems.length,
+        profilesFetched: profiles.length,
+        orderItemsError,
+        profilesError
+      }
+    }, { headers: CORS_HEADERS });
   } catch (error: any) {
     console.error('[Admin Orders API Error]:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500, headers: CORS_HEADERS });
