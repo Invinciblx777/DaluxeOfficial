@@ -36,6 +36,18 @@ const COUPON_CONFIG: Record<string, { type: 'percent' | 'flat'; value: number }>
 const COD_FEE = 49;
 const FREE_SHIPPING_THRESHOLD = 499;
 
+// ─── Products config (Sync with CollectionPage.tsx) ───────────────
+const PRODUCT_PRICES: Record<string, number> = {
+  'facewash': 249,
+  'hairserum': 349,
+  'faceserum': 449,
+  'nightcream': 399,
+  'hairoil': 299,
+  'hairshampoo': 249,
+  'skin-combo': 1097,
+  'hair-combo': 897,
+};
+
 /**
  * Compute the authoritative grand total server-side so the client cannot
  * manipulate prices by altering the HTTP request body.
@@ -53,20 +65,12 @@ async function computeGrandTotal(
   // Limit payload size to prevent DoS
   if (cartItems.length > 50) return null;
 
-  const productIds = [...new Set(cartItems.map((i) => i.product_id))];
-  const { data: dbProducts, error } = await supabaseAdmin
-    .from('products')
-    .select('id, price, stock_quantity')
-    .in('id', productIds);
-
-  if (error || !dbProducts) return null;
-
   let subtotal = 0;
   for (const item of cartItems) {
     if (item.quantity <= 0 || item.quantity > 100) return null; // sanity check
-    const dbProduct = dbProducts.find((p) => p.id === item.product_id);
-    if (!dbProduct) return null; // unknown product — reject
-    subtotal += dbProduct.price * item.quantity;
+    const price = PRODUCT_PRICES[item.product_id];
+    if (price === undefined) return null; // unknown product — reject
+    subtotal += price * item.quantity;
   }
 
   let discountAmount = 0;

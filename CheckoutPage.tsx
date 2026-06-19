@@ -351,7 +351,7 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
                   placeholder="6-digit" error={errors.pincode || pincodeError} keyboardType="number-pad" autoComplete="postal-code" textContentType="postalCode" />
               </View>
             </View>
-            <Field label="State" value={form.state} onChange={(v: string) => setForm(p => ({ ...p, state: v }))} placeholder="State" error={errors.state} autoComplete="address-level1" textContentType="addressState" />
+            <StateSelectField label="State" value={form.state} onChange={(v: string) => setForm(p => ({ ...p, state: v }))} error={errors.state} />
 
             <GoldButton label="Continue to Review" onPress={() => { if (validate()) { checkShipping(form.pincode); animateStep('review'); } }} />
           </>}
@@ -474,6 +474,61 @@ function SectionHead({ icon: Icon, label }: { icon: any; label: string }) {
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 }}>
       <Icon color={GOLD} size={15} strokeWidth={2} />
       <Text style={{ fontSize: 12, fontWeight: '700', color: TEXT, letterSpacing: 1.5, textTransform: 'uppercase' }}>{label}</Text>
+    </View>
+  );
+}
+
+const INDIAN_STATES = [
+  "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", 
+  "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli", "Daman and Diu", "Delhi", 
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", 
+  "Karnataka", "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", "Maharashtra", 
+  "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", 
+  "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", 
+  "Uttarakhand", "West Bengal"
+];
+
+function StateSelectField({ label, value, onChange, error }: any) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <Text style={f.label}>{label}</Text>
+      {Platform.OS === 'web' ? (
+        <select
+          value={value}
+          onChange={(e: any) => onChange(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={{
+            width: '100%',
+            height: 48,
+            paddingLeft: 16,
+            paddingRight: 16,
+            backgroundColor: '#FFFFFF',
+            borderWidth: 1,
+            borderColor: error ? '#EF4444' : focused ? GOLD : BORDER,
+            borderRadius: 8,
+            fontSize: 14,
+            fontFamily: 'Inter, sans-serif',
+            color: TEXT_PRIMARY,
+            outline: 'none',
+          } as any}
+        >
+          <option value="" disabled>Select State</option>
+          {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      ) : (
+        <TextInput
+          style={[f.input, focused && f.focused, error && f.errBorder]}
+          value={value}
+          onChangeText={onChange}
+          placeholder="State"
+          placeholderTextColor="rgba(26,26,26,0.28)"
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+        />
+      )}
+      {error && <Text style={{ color: '#EF4444', fontSize: 11, marginTop: 4 }}>{error}</Text>}
     </View>
   );
 }

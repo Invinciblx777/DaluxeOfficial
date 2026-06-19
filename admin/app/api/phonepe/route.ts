@@ -207,29 +207,32 @@ const COUPON_CONFIG: Record<string, { type: 'percent' | 'flat'; value: number }>
   PINKY20:  { type: 'flat',    value: 20 },
 };
 
-/**
- * Recalculate the authoritative grand total on the server.
- * Returns null if any product is unknown (security deny).
- */
-async function computeTotal(
+// ─── Products config (Sync with CollectionPage.tsx) ───────────────
+const PRODUCT_PRICES: Record<string, number> = {
+  'facewash': 249,
+  'hairserum': 349,
+  'faceserum': 449,
+  'nightcream': 399,
+  'hairoil': 299,
+  'hairshampoo': 249,
+  'skin-combo': 1097,
+  'hair-combo': 897,
+};
+
+async function computeGrandTotal(
   cartItems: Array<{ product_id: string; quantity: number }>,
   couponCode: string | null,
-  shippingRate: number,
+  shippingRate: number
 ): Promise<{ subtotal: number; discountAmount: number; grandTotal: number } | null> {
-  if (!cartItems || cartItems.length === 0 || cartItems.length > 50) return null;
-  const productIds = [...new Set(cartItems.map((i) => i.product_id))];
-  const { data: dbProducts, error } = await supabaseAdmin
-    .from('products')
-    .select('id, price')
-    .in('id', productIds);
-  if (error || !dbProducts) return null;
+  if (!cartItems || cartItems.length === 0) return null;
+  if (cartItems.length > 50) return null;
 
   let subtotal = 0;
   for (const item of cartItems) {
     if (item.quantity <= 0 || item.quantity > 100) return null;
-    const dbProduct = dbProducts.find((p) => p.id === item.product_id);
-    if (!dbProduct) return null; // unknown product — deny
-    subtotal += dbProduct.price * item.quantity;
+    const price = PRODUCT_PRICES[item.product_id];
+    if (price === undefined) return null;
+    subtotal += price * item.quantity;
   }
 
   let discountAmount = 0;
