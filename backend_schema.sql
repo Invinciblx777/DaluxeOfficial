@@ -24,8 +24,16 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- Ensure columns exist if table was already created
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone      TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS full_name  TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS name       TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS role       user_role DEFAULT 'customer';
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+-- Address fields (added for profile persistence & checkout sync)
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS address    TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS city       TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS state      TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS pincode    TEXT;
+-- Admin features: ban system
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_banned  BOOLEAN DEFAULT false;
 
 -- ── PRODUCTS ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.products (

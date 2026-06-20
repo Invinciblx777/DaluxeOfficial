@@ -132,6 +132,12 @@ export interface Customer {
   name: string;
   email: string;
   phone: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  isBanned: boolean;
+  role: string;
   orderCount: number;
   totalSpent: number;
   joinedAt: string;
@@ -157,6 +163,9 @@ interface AdminStore {
   addProduct: (p: Omit<Product, 'id' | 'createdAt' | 'stockStatus'>) => Promise<boolean>;
   updateProduct: (id: string, updates: Partial<Product>) => Promise<boolean>;
   deleteProduct: (id: string) => Promise<boolean>;
+  
+  // Customer Actions
+  toggleBanUser: (userId: string, isBanned: boolean) => Promise<boolean>;
   
   // Order Actions
   updateOrderStatus: (id: string, status: OrderStatus) => Promise<boolean>;
@@ -360,39 +369,38 @@ export const useAdminStore = create<AdminStore>()(
 
       fetchCustomers: async () => {
         try {
-          const { data, error } = await supabaseAdmin
-            .from('profiles')
-            .select('*')
-            .order('created_at', { ascending: false });
-            
-          if (!error && data) {
-            // Also aggregate order counts from the orders table
-            const { data: orderAgg } = await supabaseAdmin
-              .from('orders')
-              .select('user_id, total_amount')
-              .neq('status', 'cancelled');
-
-            const aggMap: Record<string, { count: number; spent: number }> = {};
-            for (const row of (orderAgg || [])) {
-              if (!row.user_id) continue;
-              if (!aggMap[row.user_id]) aggMap[row.user_id] = { count: 0, spent: 0 };
-              aggMap[row.user_id].count += 1;
-              aggMap[row.user_id].spent += Number(row.total_amount) || 0;
-            }
-
-            const mapped: Customer[] = data.map(c => ({
-              id: c.id,
-              name: c.full_name || 'Unnamed',
-              email: c.email || '',
-              phone: c.phone || '',
-              orderCount: aggMap[c.id]?.count || 0,
-              totalSpent: aggMap[c.id]?.spent || 0,
-              joinedAt: c.created_at
-            }));
-            set({ customers: mapped });
+          const res = await fetch('/api/admin/customers', { headers: authHeaders() });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const json = await res.json();
+          if (json.customers) {
+            set({ customers: json.customers });
           }
         } catch (err) {
-          console.warn("Failed to fetch profiles offline", err);
+          console.warn('[Admin Store] Failed to fetch customers:', err);
+        }
+      },
+
+      toggleBanUser: async (userId: string, isBanned: boolean) => {
+        try {
+          const res = await fetch('/api/admin/customers/ban', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ userId, isBanned }),
+          });
+          if (!res.ok) return false;
+          const json = await res.json();
+          if (json.success) {
+            set(state => ({
+              customers: state.customers.map(c =>
+                c.id === userId ? { ...c, isBanned } : c
+              )
+            }));
+            return true;
+          }
+          return false;
+        } catch (err) {
+          console.error('[Admin Store] toggleBanUser error:', err);
+          return false;
         }
       },
 

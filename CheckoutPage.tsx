@@ -62,15 +62,60 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
     name: '', phone: '', email: userEmail || '',
     address: '', city: '', pincode: '', state: '',
   });
+  const [saveToProfile, setSaveToProfile] = useState(false);
 
-  // Effect to sync email if user logs in while on checkout
+  // Auto-fill form from saved profile on mount
   React.useEffect(() => {
-    if (userEmail && !form.email) {
-      setForm(p => ({ ...p, email: userEmail }));
-    }
+    (async () => {
+      try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session?.user?.id) return;
+        const { data } = await supabaseClient
+          .from('profiles')
+          .select('name, full_name, phone, address, city, state, pincode, email')
+          .eq('id', session.user.id)
+          .single();
+        if (data) {
+          setForm(prev => ({
+            ...prev,
+            name: prev.name || data.name || data.full_name || '',
+            phone: prev.phone || data.phone || '',
+            email: prev.email || data.email || userEmail || '',
+            address: prev.address || data.address || '',
+            city: prev.city || data.city || '',
+            state: prev.state || data.state || '',
+            pincode: prev.pincode || data.pincode || '',
+          }));
+        }
+      } catch (e) {
+        console.warn('[Checkout] Could not pre-fill from profile:', e);
+      }
+    })();
   }, [userEmail]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Helper: save shipping address back to profile if checkbox is checked
+  async function saveAddressToProfile() {
+    if (!saveToProfile) return;
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.user?.id) return;
+      await supabaseClient.from('profiles').update({
+        name: form.name,
+        full_name: form.name,
+        phone: form.phone,
+        address: form.address,
+        city: form.city,
+        state: form.state,
+        pincode: form.pincode,
+        updated_at: new Date().toISOString(),
+      }).eq('id', session.user.id);
+      console.log('[Checkout] Address saved to profile ✓');
+    } catch (e) {
+      console.warn('[Checkout] Could not save address to profile:', e);
+    }
+  }
 
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const getShippingAmount = () => (shipping === 'CALCULATING' ? 0 : shipping);
@@ -180,6 +225,7 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
       });
       const data = await res.json();
       if (data.success) {
+        await saveAddressToProfile();
         setSuccessInfo({ total: grandTotal, count: items.length });
         setPaymentDone(true);
         onSuccess(data.order.order_number);
@@ -354,6 +400,22 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
               </View>
             </View>
             <StateSelectField label="State" value={form.state} onChange={(v: string) => setForm(p => ({ ...p, state: v }))} error={errors.state} />
+
+            {/* Save to profile checkbox */}
+            {userEmail && (
+              <TouchableOpacity
+                onPress={() => setSaveToProfile(p => !p)}
+                activeOpacity={0.7}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20, marginTop: -4 }}
+              >
+                <View style={[
+                  { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, borderColor: saveToProfile ? GOLD : '#CCC', backgroundColor: saveToProfile ? GOLD : 'transparent', alignItems: 'center', justifyContent: 'center' }
+                ]}>
+                  {saveToProfile && <Check color="#fff" size={11} strokeWidth={3} />}
+                </View>
+                <Text style={{ fontSize: 13, color: '#555' }}>Save these details to my profile for faster checkout</Text>
+              </TouchableOpacity>
+            )}
 
             <GoldButton label="Continue to Review" onPress={() => { if (validate()) { checkShipping(form.pincode); animateStep('review'); } }} />
           </>}

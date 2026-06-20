@@ -793,6 +793,23 @@ export default function App() {
           setUserEmail(session.user.email || null);
           setAuthLoading(false);
 
+          // Check if user is banned
+          try {
+            const { data: profile } = await supabaseClient
+              .from('profiles')
+              .select('is_banned')
+              .eq('id', session.user.id)
+              .single();
+            if ((profile as any)?.is_banned) {
+              console.warn('[Auth] Banned user attempted login:', session.user.email);
+              await supabaseClient.auth.signOut();
+              alert('Your account has been suspended. Please contact support at support@daluxeofficial.in');
+              return;
+            }
+          } catch (e) {
+            console.warn('[Auth] Ban check failed:', e);
+          }
+
           if (Platform.OS === 'web') {
             const path = window.location.pathname;
             if (window.location.search.includes('code=') || window.location.hash) {

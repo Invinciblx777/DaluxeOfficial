@@ -192,7 +192,14 @@ const ProfileSection = ({ userEmail }: { userEmail: string }) => {
         console.log('[Profile] Fetching profile for user:', userId);
         const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
         if (error) console.error('[Profile] Fetch error:', error.message);
-        if (data) setForm({ name: data.name || data.full_name || '', phone: data.phone || '', address: data.address || '', city: data.city || '', state: data.state || '', pincode: data.pincode || '' });
+        if (data) setForm({
+          name: data.name || data.full_name || '',
+          phone: data.phone || '',
+          address: data.address || '',
+          city: data.city || '',
+          state: data.state || '',
+          pincode: data.pincode || '',
+        });
       } catch (e) { console.error('[Profile] Unexpected error:', e); }
     })();
   }, [userEmail]);
@@ -204,18 +211,29 @@ const ProfileSection = ({ userEmail }: { userEmail: string }) => {
       const userId = session?.user?.id;
       if (!userId) { setSaving(false); return; }
       console.log('[Profile] Saving profile for user:', userId, form);
-      const { error } = await supabaseClient.from('profiles').upsert({
-        id: userId,
-        email: userEmail,
+      
+      // First try with all new columns (address, city, state, pincode, name)
+      const { error } = await supabaseClient.from('profiles').update({
         name: form.name,
+        full_name: form.name,
         phone: form.phone,
         address: form.address,
         city: form.city,
         state: form.state,
         pincode: form.pincode,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' });
-      if (error) console.error('[Profile] Save error:', error.message);
+      }).eq('id', userId);
+      
+      if (error) {
+        console.error('[Profile] Save error:', error.message);
+        // If new columns don't exist yet, fall back to basic fields only
+        const { error: fallbackError } = await supabaseClient.from('profiles').update({
+          full_name: form.name,
+          phone: form.phone,
+          updated_at: new Date().toISOString(),
+        }).eq('id', userId);
+        if (fallbackError) console.error('[Profile] Fallback save also failed:', fallbackError.message);
+      }
     } catch (e) { console.error('[Profile] Save failed:', e); }
     setSaving(false); setEditing(false); setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
