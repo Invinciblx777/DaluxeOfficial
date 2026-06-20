@@ -752,7 +752,7 @@ export default function App() {
       if (!isMounted) return;
 
       // 2. The onAuthStateChange listener is the MOST RELIABLE way to detect auth.
-      const res = supabaseClient.auth.onAuthStateChange((event, session) => {
+      const res = supabaseClient.auth.onAuthStateChange(async (event, session) => {
         if (!isMounted) return;
         console.log('[Auth] State change:', event, session?.user?.email || 'no session');
 
