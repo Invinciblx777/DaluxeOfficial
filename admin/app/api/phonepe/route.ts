@@ -110,6 +110,13 @@ async function finalizePaidOrder(
   // 3. Create the order. A unique index on transaction_id guards against
   //    double-fulfilment from a callback/verify race.
   let order: any = null;
+  // We inject _cart_summary into shipping_address (JSONB) as a fallback,
+  // because the cart_summary column might be missing and order_items might fail due to FK constraints.
+  const enrichedShipping = {
+    ...(shippingAddr || {}),
+    _cart_summary_fallback: enrichedCartItems,
+  };
+
   const baseOrderData = {
     user_id: pending.user_id,
     order_number: orderNumber,
@@ -119,7 +126,7 @@ async function finalizePaidOrder(
     payment_method: 'phonepe',
     payment_gateway: 'phonepe',
     status: 'confirmed',
-    shipping_address: shippingAddr,
+    shipping_address: enrichedShipping,
     email: pending.email || 'customer@daluxeskincare.com',
     transaction_id: transactionId,
   };

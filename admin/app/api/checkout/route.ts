@@ -229,7 +229,14 @@ async function handleRequest(req: NextRequest) {
         price: PRODUCT_PRICES[item.product_id] || item.price,
       }));
 
-      // Build base order row (without cart_summary for fallback)
+      // Build base order row
+      // We inject _cart_summary into shipping_address (JSONB) as a fallback,
+      // because the cart_summary column might be missing and order_items might fail due to FK constraints.
+      const enrichedShipping = {
+        ...(orderPayload.shipping_address || {}),
+        _cart_summary_fallback: enrichedCartItems,
+      };
+
       const baseRow: Record<string, any> = {
         user_id: user.id,
         order_number: orderNumber,
@@ -239,7 +246,7 @@ async function handleRequest(req: NextRequest) {
         payment_method: 'cod',
         payment_gateway: 'cod',
         status: 'confirmed',
-        shipping_address: orderPayload.shipping_address,
+        shipping_address: enrichedShipping,
         email: orderPayload.email,
       };
 

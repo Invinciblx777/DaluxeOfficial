@@ -94,9 +94,15 @@ export async function GET(req: Request) {
       const relatedProfile = profiles.find((p) => p.id === order.user_id) || null;
       
       // If we still have 'Daluxe Product' or missing items, try cart_summary stored on the order row itself
-      if ((relatedItems.length === 0 || relatedItems.some(i => i.name === 'Daluxe Product')) && order.cart_summary) {
+      // or fallback to the injected _cart_summary_fallback in shipping_address
+      let summaryFallback = order.cart_summary;
+      if (!summaryFallback && order.shipping_address && typeof order.shipping_address === 'object') {
+        summaryFallback = (order.shipping_address as any)._cart_summary_fallback;
+      }
+      
+      if ((relatedItems.length === 0 || relatedItems.some(i => i.name === 'Daluxe Product' || i.name === 'Product')) && summaryFallback) {
         try {
-          let parsed = order.cart_summary;
+          let parsed = summaryFallback;
           if (typeof parsed === 'string') {
             parsed = JSON.parse(parsed);
           }
