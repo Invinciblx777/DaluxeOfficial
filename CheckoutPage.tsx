@@ -64,33 +64,42 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
   });
   const [saveToProfile, setSaveToProfile] = useState(false);
 
+  const syncProfile = async (silent = true) => {
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) return;
+      const res = await fetch(`${getApiBase()}/api/profile`, {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+      if (!res.ok) {
+        if (!silent) alert('Failed to sync profile');
+        return;
+      }
+      const { profile } = await res.json();
+      if (profile && Object.keys(profile).length > 0 && (profile.name || profile.address || profile.phone)) {
+        setForm(prev => ({
+          ...prev,
+          name: profile.name || profile.full_name || prev.name,
+          phone: profile.phone || prev.phone,
+          email: profile.email || prev.email || userEmail || '',
+          address: profile.address || prev.address,
+          city: profile.city || prev.city,
+          state: profile.state || prev.state,
+          pincode: profile.pincode || prev.pincode,
+        }));
+        if (!silent) alert('Profile synced successfully!');
+      } else {
+         if (!silent) alert('No profile details found to sync. Please update your profile first.');
+      }
+    } catch (e) {
+      console.warn('[Checkout] Could not pre-fill from profile:', e);
+      if (!silent) alert('Network error while syncing profile');
+    }
+  };
+
   // Auto-fill form from saved profile on mount via server-side API
   React.useEffect(() => {
-    (async () => {
-      try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session?.access_token) return;
-        const res = await fetch('/api/profile', {
-          headers: { 'Authorization': `Bearer ${session.access_token}` }
-        });
-        if (!res.ok) return;
-        const { profile } = await res.json();
-        if (profile) {
-          setForm(prev => ({
-            ...prev,
-            name: prev.name || profile.name || profile.full_name || '',
-            phone: prev.phone || profile.phone || '',
-            email: prev.email || profile.email || userEmail || '',
-            address: prev.address || profile.address || '',
-            city: prev.city || profile.city || '',
-            state: prev.state || profile.state || '',
-            pincode: prev.pincode || profile.pincode || '',
-          }));
-        }
-      } catch (e) {
-        console.warn('[Checkout] Could not pre-fill from profile:', e);
-      }
-    })();
+    syncProfile(true);
   }, [userEmail]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -101,7 +110,7 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session?.access_token) return;
-      await fetch('/api/profile', {
+      await fetch(`${getApiBase()}/api/profile`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -382,7 +391,17 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
 
           {/* ── STEP 1: DETAILS ── */}
           {step === 'details' && <>
-            <SectionHead icon={User} label="Your Details" />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <SectionHead icon={User} label="Your Details" />
+              {userEmail && (
+                <TouchableOpacity 
+                  onPress={() => syncProfile(false)} 
+                  style={{ backgroundColor: 'rgba(201,162,39,0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}
+                >
+                  <Text style={{ color: GOLD, fontSize: 12, fontWeight: '600' }}>Sync from Profile</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             <Field label="Full Name" value={form.name} onChange={(v: string) => setForm(p => ({ ...p, name: v }))} placeholder="e.g. Priya Sharma" error={errors.name} autoComplete="name" textContentType="name" />
             <Field label="Phone Number" value={form.phone} onChange={(v: string) => setForm(p => ({ ...p, phone: v.replace(/\D/g, '').slice(0, 10) }))} placeholder="10-digit mobile number" error={errors.phone} keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber" />
             <Field label="Email Address" value={form.email} onChange={(v: string) => setForm(p => ({ ...p, email: v }))} placeholder="you@example.com" error={errors.email} keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" />

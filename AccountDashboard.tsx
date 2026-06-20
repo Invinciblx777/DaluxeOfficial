@@ -10,6 +10,7 @@ import {
   MapPin, Mail, Clock, Send, AlertCircle, Search,
 } from 'lucide-react-native';
 import { supabaseClient } from './lib/supabaseClient';
+import { getApiBase } from './lib/apiBase';
 
 // ─── Light Design Tokens (matches homepage palette) ────────────────────────
 const GOLD       = '#C9A227';
@@ -189,7 +190,7 @@ const ProfileSection = ({ userEmail }: { userEmail: string }) => {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session?.user?.id || !session.access_token) return;
         console.log('[Profile] Fetching profile via API for user:', session.user.id);
-        const res = await fetch('/api/profile', {
+        const res = await fetch(`${getApiBase()}/api/profile`, {
           headers: { 'Authorization': `Bearer ${session.access_token}` }
         });
         if (!res.ok) {
@@ -215,7 +216,7 @@ const ProfileSection = ({ userEmail }: { userEmail: string }) => {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session?.access_token) { setSaving(false); return; }
       console.log('[Profile] Saving profile via API...');
-      const res = await fetch('/api/profile', {
+      const res = await fetch(`${getApiBase()}/api/profile`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
