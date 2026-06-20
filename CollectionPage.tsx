@@ -2176,7 +2176,8 @@ export const CartDrawer = ({
       setAppliedPromo(code);
       setPromoError(null);
     } else if (['SUMPI20', 'RASHMI20', 'DIKSHA20', 'PINKY20'].includes(code)) {
-      setDiscount(20);
+      const d = Math.round(total * 0.2);
+      setDiscount(d);
       setAppliedPromo(code);
       setPromoError(null);
     } else {
@@ -2290,7 +2291,7 @@ export const CartDrawer = ({
 
             {discount > 0 && (
               <View style={[cart.totalRow, { marginBottom: 12 }]}>
-                <Text style={[cart.totalLabel, { color: '#C9A227' }]}>Discount (10%)</Text>
+                <Text style={[cart.totalLabel, { color: '#C9A227' }]}>Discount ({appliedPromo === 'DALUXE10' ? '10%' : '20%'})</Text>
                 <Text style={[cart.totalValue, { color: '#C9A227' }]}>- ₹{discount.toLocaleString('en-IN')}</Text>
               </View>
             )}
