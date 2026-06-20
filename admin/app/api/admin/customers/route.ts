@@ -8,13 +8,14 @@ export async function GET(req: NextRequest) {
   const admin = await getAdminUser(req);
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Fetch all profiles with order stats
+  // Fetch all profiles - use select('*') so missing columns don't crash the query
   const { data: profiles, error: profilesError } = await supabaseAdmin
     .from('profiles')
-    .select('id, email, name, full_name, phone, address, city, state, pincode, is_banned, role, created_at')
+    .select('*')
     .order('created_at', { ascending: false });
 
   if (profilesError) {
+    console.error('[Customers API] profiles fetch error:', profilesError.message);
     return NextResponse.json({ error: profilesError.message }, { status: 500 });
   }
 
@@ -34,10 +35,10 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const customers = (profiles || []).map(p => ({
+  const customers = (profiles || []).map((p: any) => ({
     id: p.id,
     name: p.name || p.full_name || 'No Name',
-    email: p.email,
+    email: p.email || '',
     phone: p.phone || '',
     address: p.address || '',
     city: p.city || '',

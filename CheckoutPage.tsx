@@ -64,27 +64,27 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
   });
   const [saveToProfile, setSaveToProfile] = useState(false);
 
-  // Auto-fill form from saved profile on mount
+  // Auto-fill form from saved profile on mount via server-side API
   React.useEffect(() => {
     (async () => {
       try {
         const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session?.user?.id) return;
-        const { data } = await supabaseClient
-          .from('profiles')
-          .select('name, full_name, phone, address, city, state, pincode, email')
-          .eq('id', session.user.id)
-          .single();
-        if (data) {
+        if (!session?.access_token) return;
+        const res = await fetch('/api/profile', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        });
+        if (!res.ok) return;
+        const { profile } = await res.json();
+        if (profile) {
           setForm(prev => ({
             ...prev,
-            name: prev.name || data.name || data.full_name || '',
-            phone: prev.phone || data.phone || '',
-            email: prev.email || data.email || userEmail || '',
-            address: prev.address || data.address || '',
-            city: prev.city || data.city || '',
-            state: prev.state || data.state || '',
-            pincode: prev.pincode || data.pincode || '',
+            name: prev.name || profile.name || profile.full_name || '',
+            phone: prev.phone || profile.phone || '',
+            email: prev.email || profile.email || userEmail || '',
+            address: prev.address || profile.address || '',
+            city: prev.city || profile.city || '',
+            state: prev.state || profile.state || '',
+            pincode: prev.pincode || profile.pincode || '',
           }));
         }
       } catch (e) {
@@ -95,22 +95,27 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Helper: save shipping address back to profile if checkbox is checked
+  // Helper: save shipping address back to profile via server-side API
   async function saveAddressToProfile() {
     if (!saveToProfile) return;
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
-      if (!session?.user?.id) return;
-      await supabaseClient.from('profiles').update({
-        name: form.name,
-        full_name: form.name,
-        phone: form.phone,
-        address: form.address,
-        city: form.city,
-        state: form.state,
-        pincode: form.pincode,
-        updated_at: new Date().toISOString(),
-      }).eq('id', session.user.id);
+      if (!session?.access_token) return;
+      await fetch('/api/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          name: form.name,
+          phone: form.phone,
+          address: form.address,
+          city: form.city,
+          state: form.state,
+          pincode: form.pincode,
+        }),
+      });
       console.log('[Checkout] Address saved to profile ✓');
     } catch (e) {
       console.warn('[Checkout] Could not save address to profile:', e);
