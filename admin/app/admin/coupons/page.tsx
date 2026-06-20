@@ -19,10 +19,10 @@ const dateFormatter = new Intl.DateTimeFormat('en-IN', {
 
 // All supported coupons with their discount type for display
 const COUPON_CONFIG: Record<string, { label: string; type: 'flat' | 'percent'; value: number }> = {
-  'SUMPI20':   { label: 'SUMPI20',   type: 'flat',    value: 20 },
-  'RASHMI20':  { label: 'RASHMI20',  type: 'flat',    value: 20 },
-  'DIKSHA20':  { label: 'DIKSHA20',  type: 'flat',    value: 20 },
-  'PINKY20':   { label: 'PINKY20',   type: 'flat',    value: 20 },
+  'SUMPI20':   { label: 'SUMPI20',   type: 'percent', value: 20 },
+  'RASHMI20':  { label: 'RASHMI20',  type: 'percent', value: 20 },
+  'DIKSHA20':  { label: 'DIKSHA20',  type: 'percent', value: 20 },
+  'PINKY20':   { label: 'PINKY20',   type: 'percent', value: 20 },
   'DALUXE10':  { label: 'DALUXE10',  type: 'percent', value: 10 },
 };
 

@@ -27,10 +27,10 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
 // ─── Coupon config (keep in sync with CheckoutPage.tsx and admin coupons page) ─
 const COUPON_CONFIG: Record<string, { type: 'percent' | 'flat'; value: number }> = {
   DALUXE10: { type: 'percent', value: 10 },
-  SUMPI20:  { type: 'flat',    value: 20 },
-  RASHMI20: { type: 'flat',    value: 20 },
-  DIKSHA20: { type: 'flat',    value: 20 },
-  PINKY20:  { type: 'flat',    value: 20 },
+  SUMPI20:  { type: 'percent', value: 20 },
+  RASHMI20: { type: 'percent', value: 20 },
+  DIKSHA20: { type: 'percent', value: 20 },
+  PINKY20:  { type: 'percent', value: 20 },
 };
 
 const COD_FEE = 49;

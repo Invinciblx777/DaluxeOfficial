@@ -79,7 +79,7 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
   if (appliedCoupon === 'DALUXE10') {
     discountAmount = Math.round(subtotal * 0.1);
   } else if (appliedCoupon && VALID_COUPONS.includes(appliedCoupon)) {
-    discountAmount = 20;
+    discountAmount = Math.round(subtotal * 0.2);
   }
 
   const codFee = paymentMethod === 'cod' ? 49 : 0;
@@ -93,7 +93,7 @@ export default function CheckoutPage({ items, initialCoupon, userEmail, onBack, 
       setAppliedCoupon(code);
       setCouponInput('');
       setCouponMsg(`✓ Coupon applied! ${
-        code === 'DALUXE10' ? '10% off your order' : '₹20 off your order'
+        code === 'DALUXE10' ? '10% off your order' : '20% off your order'
       }`);
     } else {
       setAppliedCoupon(null);

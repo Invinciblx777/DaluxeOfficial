@@ -1304,6 +1304,8 @@ export default function App() {
       const pb = interpolate(currentScrollY, [0, 150], [20, 12], Extrapolation.CLAMP);
 
       return {
+        opacity: 1,
+        transform: [{ translateY: 0 }],
         paddingTop: Platform.OS === 'web' ? ptDesktop : ptMobile,
         paddingBottom: pb,
         backgroundColor: `rgba(253, 251, 247, ${bgOpacity})`,
@@ -1315,6 +1317,8 @@ export default function App() {
 
     // Default home page
     return {
+      opacity: 1,
+      transform: [{ translateY: 0 }],
       backgroundColor: 'transparent',
       borderBottomWidth: 0,
       paddingTop: Platform.OS === 'web' ? 30 : 50,
